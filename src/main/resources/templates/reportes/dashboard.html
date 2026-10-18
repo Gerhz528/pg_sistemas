@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Reportes y Análisis')}"></head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <aside th:replace="~{fragments/layout :: sidebar('reportes')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Reportes Gerenciales')}"></header>
+        <main class="content-body" style="background-color: #f8fafc;">
+
+            <!-- FILTRO DE CONSULTA -->
+            <div class="card border-0 shadow-sm p-4 mb-4 bg-white rounded-4">
+                <form th:action="@{/reportes}" method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Fecha Inicial</label>
+                        <input type="date" name="inicio" class="form-control bg-light border-0" th:value="${inicio}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Fecha Final</label>
+                        <input type="date" name="fin" class="form-control bg-light border-0" th:value="${fin}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Filtrar por Cliente</label>
+                        <select name="clienteId" class="form-select bg-light border-0">
+                            <option value="">-- Todos los Clientes --</option>
+                            <option th:each="c : ${clientes}" th:value="${c.id}" th:text="${c.nombre}" th:selected="${clienteId == c.id}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Filtrar por Proyecto</label>
+                        <select name="proyectoId" class="form-select bg-light border-0">
+                            <option value="">-- Todos los Proyectos --</option>
+                            <option th:each="p : ${proyectos}" th:value="${p.id}" th:text="${p.nombre}" th:selected="${proyectoId == p.id}"></option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <span class="text-muted small"><i class="bi bi-funnel-fill text-primary me-1"></i>Filtros dinámicos sincronizados</span>
+                        <div class="d-flex gap-2">
+                            <a th:href="@{/reportes}" class="btn btn-light rounded-pill px-4">Limpiar</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-filter me-1"></i>Aplicar Filtros
+                            </button>
+                            <a th:href="@{/reportes/exportar-excel(inicio=${inicio}, fin=${fin}, clienteId=${clienteId}, proyectoId=${proyectoId})}" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-file-earmark-excel-fill me-1"></i>Excel
+                            </a>
+                            <a th:href="@{/reportes/imprimir(inicio=${inicio}, fin=${fin}, clienteId=${clienteId}, proyectoId=${proyectoId})}" target="_blank" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-printer-fill me-1"></i>PDF / Imprimir
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TARJETAS DE KPIS PRINCIPALES (HU-27 Tarea 2) -->
+            <div class="row g-4 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Presupuesto Cotizado</span>
+                            <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-circle"><i class="bi bi-cash-stack fs-5"></i></div>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0" th:text="'$' + ${#numbers.formatDecimal(kpis.totalCotizado, 1, 2)}"></h3>
+                        <small class="text-muted">Ingresos proyectados</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Gasto Real Acumulado</span>
+                            <div class="bg-danger bg-opacity-10 text-danger p-2 rounded-circle"><i class="bi bi-graph-down-arrow fs-5"></i></div>
+                        </div>
+                        <h3 class="fw-bold text-danger mb-0" th:text="'$' + ${#numbers.formatDecimal(kpis.totalGastoAcumulado, 1, 2)}"></h3>
+                        <small class="text-muted">Compras + Nómina</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Horas Extra en Período</span>
+                            <div class="bg-warning bg-opacity-10 text-warning text-dark p-2 rounded-circle"><i class="bi bi-clock-history fs-5"></i></div>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0" th:text="${#numbers.formatDecimal(kpis.totalHorasExtras, 1, 1)} + ' hrs'"></h3>
+                        <small class="text-muted">Jornadas aprobadas</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Proyecto Más Costoso</span>
+                            <div class="bg-dark bg-opacity-10 text-dark p-2 rounded-circle"><i class="bi bi-building-exclamation fs-5"></i></div>
+                        </div>
+                        <h5 class="fw-bold text-dark text-truncate mb-1" th:text="${kpis.proyectoMasCostoso}"></h5>
+                        <span class="badge bg-danger rounded-pill fw-bold" th:text="'$' + ${#numbers.formatDecimal(kpis.montoProyectoMasCostoso, 1, 2)}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS INTERACTIVOS (CHART.JS - HU-27 Tarea 1) -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <h6 class="fw-bold text-dark mb-4"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Comparativa: Presupuesto vs. Gasto Real por Obra</h6>
+                        <div style="height: 320px;">
+                            <canvas id="chartPresupuestoVsGasto"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <h6 class="fw-bold text-dark mb-4"><i class="bi bi-pie-chart-fill text-success me-2"></i>Estructura del Gasto</h6>
+                        <div style="height: 320px;" class="d-flex align-items-center justify-content-center">
+                            <canvas id="chartEstructuraGasto"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA ANALÍTICA CONSOLIDADA (HU-26 Tarea 1) -->
+            <div class="card border-0 shadow-sm overflow-hidden bg-white rounded-4">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-table me-2 text-primary"></i>Desglose Consolidado por Proyecto</h5>
+                    <span class="badge bg-light text-dark border px-3 py-2 fw-semibold" th:text="${proyectosReporte.size()} + ' Proyectos analizados'"></span>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Proyecto</th>
+                                <th>Cliente</th>
+                                <th class="text-end">Presupuesto</th>
+                                <th class="text-end">Facturas</th>
+                                <th class="text-end">Mano de Obra</th>
+                                <th class="text-end">Gasto Total</th>
+                                <th class="text-end">Diferencia</th>
+                                <th class="text-center">% Ejecutado</th>
+                                <th class="text-center pe-4">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="r : ${proyectosReporte}">
+                                <td class="ps-4">
+                                    <strong class="text-dark d-block" th:text="${r.proyectoNombre}"></strong>
+                                    <small class="text-muted font-monospace" th:text="'ID #' + ${r.proyectoId}"></small>
+                                </td>
+                                <td th:text="${r.clienteNombre}"></td>
+                                <td class="text-end fw-bold text-primary" th:text="'$' + ${#numbers.formatDecimal(r.presupuestoCotizado, 1, 2)}"></td>
+                                <td class="text-end text-danger" th:text="'$' + ${#numbers.formatDecimal(r.gastoFacturas, 1, 2)}"></td>
+                                <td class="text-end text-secondary" th:text="'$' + ${#numbers.formatDecimal(r.gastoNomina, 1, 2)}"></td>
+                                <td class="text-end fw-bold text-danger" th:text="'$' + ${#numbers.formatDecimal(r.gastoTotal, 1, 2)}"></td>
+                                <td class="text-end fw-bold" th:classappend="${r.saldoDiferencia >= 0 ? 'text-success' : 'text-danger'}" 
+                                    th:text="'$' + ${#numbers.formatDecimal(r.saldoDiferencia, 1, 2)}"></td>
+                                <td class="text-center">
+                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 th:classappend="${r.alertaSobrecosto ? 'bg-danger' : 'bg-primary'}"
+                                                 th:style="'width: ' + (${r.porcentajeEjecutado > 100 ? 100 : r.porcentajeEjecutado}) + '%'"></div>
+                                        </div>
+                                        <small class="fw-bold" th:text="${r.porcentajeEjecutado} + '%'"></small>
+                                    </div>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <span th:if="${r.alertaSobrecosto}" class="badge bg-danger rounded-pill px-3 shadow-sm" title="Gasto superó el 90% del presupuesto">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Crítico
+                                    </span>
+                                    <span th:unless="${r.alertaSobrecosto}" class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
+                                        <i class="bi bi-shield-check me-1"></i>En Margen
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(proyectosReporte)}">
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bi bi-folder-x display-5 d-block mb-3 opacity-50"></i>
+                                    No hay datos registrados en el rango de fechas seleccionado.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script th:replace="~{fragments/layout :: script}"></script>
+
+    <!-- INICIALIZACIÓN DE CHART.JS -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const reportesData = /*[[${proyectosReporte}]]*/ [];
+        const totFacturas = /*[[${kpis.totalFacturasGastos}]]*/ 0.0;
+        const totNomina = /*[[${kpis.totalNominaPagada}]]*/ 0.0;
+
+        const labelsProy = reportesData.map(d => d.proyectoNombre);
+        const dataPresupuesto = reportesData.map(d => d.presupuestoCotizado);
+        const dataGasto = reportesData.map(d => d.gastoTotal);
+
+        // Gráfico de Barras: Presupuesto vs Gasto Real
+        const ctxBar = document.getElementById('chartPresupuestoVsGasto').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: labelsProy,
+                datasets: [
+                    {
+                        label: 'Presupuesto Cotizado ($)',
+                        data: dataPresupuesto,
+                        backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                        borderColor: '#2563eb',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Gasto Real Ejecutado ($)',
+                        data: dataGasto,
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: '#dc2626',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return '$' + value.toLocaleString(); }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Gráfico Circular: Distribución de Costos
+        const ctxPie = document.getElementById('chartEstructuraGasto').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: ['Facturas / Materiales', 'Nómina de Personal'],
+                datasets: [{
+                    data: [totFacturas, totNomina],
+                    backgroundColor: ['#ef4444', '#3b82f6'],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>

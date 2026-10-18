@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Financiero Consolidado - Panameño Garcia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Arial', sans-serif; padding: 2rem; }
+        .report-box { background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 0 25px rgba(0,0,0,0.08); max-width: 1100px; margin: auto; }
+        .logo-box { width: 55px; height: 55px; background: #1e3a8a; color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-right: 15px; }
+        @media print {
+            body { background: white; padding: 0; }
+            .report-box { box-shadow: none; padding: 0; max-width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="text-center mb-4 no-print">
+        <button onclick="window.print()" class="btn btn-dark rounded-pill px-5 fw-bold shadow-lg">
+            <i class="bi bi-printer-fill me-2"></i>Imprimir o Guardar PDF
+        </button>
+        <button onclick="window.close()" class="btn btn-light rounded-pill px-4 ms-2">Cerrar</button>
+    </div>
+
+    <div class="report-box">
+        <!-- ENCABEZADO OFICIAL -->
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-4">
+            <div class="d-flex align-items-center">
+                <div class="logo-box"><i class="bi bi-hexagon-fill"></i></div>
+                <div>
+                    <h3 class="fw-bold mb-0 text-dark">Constructora Panameño Garcia</h3>
+                    <p class="text-muted mb-0 small">Colonia Avila, Calle El Progreso #3145, San Salvador | Tel: 7568-8299</p>
+                </div>
+            </div>
+            <div class="text-end">
+                <h4 class="fw-bold text-primary mb-1">INFORME GERENCIAL</h4>
+                <p class="text-muted small mb-0">Rango: <strong th:text="${#temporals.format(inicio, 'dd/MM/yyyy')}"></strong> al <strong th:text="${#temporals.format(fin, 'dd/MM/yyyy')}"></strong></p>
+                <p class="text-muted small mb-0">Emisión: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span></p>
+            </div>
+        </div>
+
+        <!-- RESUMEN EJECUTIVO (KPIs) -->
+        <div class="row g-3 mb-4 text-center">
+            <div class="col-3">
+                <div class="border rounded-3 p-3 bg-light">
+                    <small class="text-muted fw-bold d-block">TOTAL COTIZADO</small>
+                    <h5 class="fw-bold text-primary mb-0" th:text="'$' + ${#numbers.formatDecimal(kpis.totalCotizado, 1, 2)}"></h5>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded-3 p-3 bg-light">
+                    <small class="text-muted fw-bold d-block">GASTO FACTURAS</small>
+                    <h5 class="fw-bold text-danger mb-0" th:text="'$' + ${#numbers.formatDecimal(kpis.totalFacturasGastos, 1, 2)}"></h5>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded-3 p-3 bg-light">
+                    <small class="text-muted fw-bold d-block">NÓMINA PERSONAL</small>
+                    <h5 class="fw-bold text-secondary mb-0" th:text="'$' + ${#numbers.formatDecimal(kpis.totalNominaPagada, 1, 2)}"></h5>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded-3 p-3 bg-light">
+                    <small class="text-muted fw-bold d-block">BALANCE FINAL</small>
+                    <h5 class="fw-bold mb-0" th:classappend="${kpis.balanceGlobal >= 0 ? 'text-success' : 'text-danger'}" 
+                        th:text="'$' + ${#numbers.formatDecimal(kpis.balanceGlobal, 1, 2)}"></h5>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA DETALLADA -->
+        <table class="table table-bordered border-secondary border-opacity-25 align-middle mb-4" style="font-size: 0.85rem;">
+            <thead class="table-dark">
+                <tr>
+                    <th>Proyecto</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th class="text-end">Cotizado</th>
+                    <th class="text-end">Facturas</th>
+                    <th class="text-end">Mano de Obra</th>
+                    <th class="text-end">Gasto Total</th>
+                    <th class="text-end">Saldo</th>
+                    <th class="text-center">% Ejec.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="r : ${proyectosReporte}">
+                    <td class="fw-bold text-dark" th:text="${r.proyectoNombre}"></td>
+                    <td th:text="${r.clienteNombre}"></td>
+                    <td th:text="${r.estadoProyecto}"></td>
+                    <td class="text-end fw-bold" th:text="'$' + ${#numbers.formatDecimal(r.presupuestoCotizado, 1, 2)}"></td>
+                    <td class="text-end text-danger" th:text="'$' + ${#numbers.formatDecimal(r.gastoFacturas, 1, 2)}"></td>
+                    <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(r.gastoNomina, 1, 2)}"></td>
+                    <td class="text-end fw-bold text-danger" th:text="'$' + ${#numbers.formatDecimal(r.gastoTotal, 1, 2)}"></td>
+                    <td class="text-end fw-bold" th:classappend="${r.saldoDiferencia >= 0 ? 'text-success' : 'text-danger'}" 
+                        th:text="'$' + ${#numbers.formatDecimal(r.saldoDiferencia, 1, 2)}"></td>
+                    <td class="text-center" th:text="${r.porcentajeEjecutado} + '%'"></td>
+                </tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="3" class="text-end text-uppercase">Totales Generales:</td>
+                    <td class="text-end text-primary" th:text="'$' + ${#numbers.formatDecimal(kpis.totalCotizado, 1, 2)}"></td>
+                    <td class="text-end text-danger" th:text="'$' + ${#numbers.formatDecimal(kpis.totalFacturasGastos, 1, 2)}"></td>
+                    <td class="text-end text-secondary" th:text="'$' + ${#numbers.formatDecimal(kpis.totalNominaPagada, 1, 2)}"></td>
+                    <td class="text-end text-danger" th:text="'$' + ${#numbers.formatDecimal(kpis.totalGastoAcumulado, 1, 2)}"></td>
+                    <td class="text-end" th:classappend="${kpis.balanceGlobal >= 0 ? 'text-success' : 'text-danger'}" 
+                        th:text="'$' + ${#numbers.formatDecimal(kpis.balanceGlobal, 1, 2)}"></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- FIRMAS DE CONFORMIDAD -->
+        <div class="row mt-5 pt-4 text-center">
+            <div class="col-5 offset-1 border-top border-dark pt-2">
+                <p class="fw-bold mb-0">Ing. Miguel Ángel Panameño</p>
+                <small class="text-muted">Dirección Ejecutiva</small>
+            </div>
+            <div class="col-5 border-top border-dark pt-2">
+                <p class="fw-bold mb-0">Área Contable y Financiera</p>
+                <small class="text-muted">Constructora Panameño Garcia</small>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

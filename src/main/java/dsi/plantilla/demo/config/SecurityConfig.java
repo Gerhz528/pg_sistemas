@@ -24,8 +24,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // NUEVO: Instruye al navegador a NO guardar la página en caché.
-            // Si el usuario da "Atrás" en su navegador web, la página expirará y lo mandará al Login.
             .headers(headers -> headers
                 .cacheControl(cache -> cache.disable())
             )
@@ -46,6 +44,9 @@ public class SecurityConfig {
                 .requestMatchers("/planillas/**").hasRole("CONTADORA")
                 .requestMatchers("/facturacion/**").hasRole("CONTADORA") 
                 
+                // Épica 9: Reportes accesible para Jefe, Contadora y Administrador
+                .requestMatchers("/reportes/**").hasAnyRole("ADMINISTRADOR", "JEFE", "CONTADORA")
+                
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -55,7 +56,6 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
-                // Invalida la sesión actual para evitar usar la flecha hacia atrás
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
                 .deleteCookies("JSESSIONID")

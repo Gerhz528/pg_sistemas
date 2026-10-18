@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface FacturaRepository extends JpaRepository<Factura, Long> {
@@ -15,6 +16,11 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     @Query("SELECT COALESCE(SUM(f.monto), 0) FROM Factura f WHERE f.proyecto.id = :proyectoId")
     Double sumarGastosPorProyecto(@Param("proyectoId") Long proyectoId);
 
-    // NUEVO: Facturas específicas de un proyecto
+    @Query("SELECT COALESCE(SUM(f.monto), 0) FROM Factura f WHERE f.proyecto.id = :proyectoId AND f.fecha BETWEEN :inicio AND :fin")
+    Double sumarGastosPorProyectoYFechas(@Param("proyectoId") Long proyectoId, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
+
+    @Query("SELECT COALESCE(SUM(f.monto), 0) FROM Factura f WHERE f.fecha BETWEEN :inicio AND :fin")
+    Double sumarTodosGastosEnRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
+
     List<Factura> findByProyectoIdOrderByFechaDesc(Long proyectoId);
 }
