@@ -44,8 +44,9 @@ public class SecurityConfig {
                 .requestMatchers("/planillas/**").hasRole("CONTADORA")
                 .requestMatchers("/facturacion/**").hasRole("CONTADORA") 
                 
-                // Épica 9: Reportes accesible para Jefe, Contadora y Administrador
                 .requestMatchers("/reportes/**").hasAnyRole("ADMINISTRADOR", "JEFE", "CONTADORA")
+                // HU-28 y HU-30: Seguridad para Auditoría y Logs del Sistema
+                .requestMatchers("/auditoria/**").hasAnyRole("ADMINISTRADOR", "JEFE")
                 
                 .anyRequest().authenticated()
             )
