@@ -30,6 +30,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/css/**", "/js/**", "/img/**", "/webjars/**", "/uploads/**").permitAll()
                 .requestMatchers("/dashboard").authenticated()
+                .requestMatchers("/ayuda/**").authenticated() // Centro de Ayuda para cualquier rol
                 
                 .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/clientes/**").hasAnyRole("ADMINISTRADOR", "JEFE")
@@ -45,7 +46,6 @@ public class SecurityConfig {
                 .requestMatchers("/facturacion/**").hasRole("CONTADORA") 
                 
                 .requestMatchers("/reportes/**").hasAnyRole("ADMINISTRADOR", "JEFE", "CONTADORA")
-                // HU-28 y HU-30: Seguridad para Auditoría y Logs del Sistema
                 .requestMatchers("/auditoria/**").hasAnyRole("ADMINISTRADOR", "JEFE")
                 
                 .anyRequest().authenticated()
