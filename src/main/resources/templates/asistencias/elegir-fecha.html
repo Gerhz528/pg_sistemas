@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Nueva Asistencia')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('asistencias')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Seleccionar Fecha')}"></header>
+        <main class="content-body">
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-5">
+                    <div class="card p-5 border-0 shadow text-center">
+                        <i class="bi bi-calendar-event display-1 text-primary mb-4"></i>
+                        <h4 class="fw-bold mb-4">¿Para qué día es el reporte?</h4>
+                        <form th:action="@{/asistencias/diaria}" method="get">
+                            <input type="date" name="fecha" class="form-control form-control-lg mb-4 text-center border-0 bg-light" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                            <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold">Continuar <i class="bi bi-arrow-right ms-2"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+</body>
+</html>

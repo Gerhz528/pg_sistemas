@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Panel de Control')}"></head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <aside th:replace="~{fragments/layout :: sidebar('home')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Panel de Control')}"></header>
+        <main class="content-body" style="background-color: #f8fafc;">
+
+            <!-- BANNER DE BIENVENIDA CON ACCIONES RÁPIDAS -->
+            <div class="card border-0 shadow-sm p-4 p-md-5 mb-4 rounded-4 text-white" 
+                 style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <span class="badge bg-primary px-3 py-2 rounded-pill mb-3">
+                            <i class="bi bi-shield-check me-1"></i> Sesión Activa
+                        </span>
+                        <h2 class="display-6 fw-bold mb-2">
+                            Hola, <span th:text="${#authentication.name}">Usuario</span> 👋
+                        </h2>
+                        <p class="lead opacity-75 mb-3" style="font-size: 1.05rem;">
+                            Bienvenido al centro de operaciones de <strong>Constructora Panameño Garcia</strong>. Aquí tienes el estado financiero y operativo acumulado de este mes.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a sec:authorize="hasRole('SUPERVISOR')" href="/asistencias/nueva" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-clock-history me-1"></i>Reportar Jornada
+                            </a>
+                            <a sec:authorize="hasAnyRole('JEFE', 'ADMINISTRADOR')" href="/cotizaciones/nueva" class="btn btn-outline-light rounded-pill px-4 fw-bold">
+                                <i class="bi bi-file-earmark-plus me-1"></i>Nueva Cotización
+                            </a>
+                            <a sec:authorize="hasRole('CONTADORA')" href="/planillas" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-calculator me-1"></i>Calcular Nómina
+                            </a>
+                            <a sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE', 'CONTADORA')" href="/reportes" class="btn btn-light rounded-pill px-4 fw-bold text-dark">
+                                <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Ver Reportes Detallados
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0 d-none d-lg-block">
+                        <i class="bi bi-buildings text-white opacity-25" style="font-size: 8rem;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUADRICULA DE KPIS OPERATIVOS Y FINANCIEROS -->
+            <div class="row g-4 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Obras en Curso</span>
+                            <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-circle">
+                                <i class="bi bi-cone-striped fs-5"></i>
+                            </div>
+                        </div>
+                        <h2 class="fw-bold text-dark mb-0" th:text="${obrasActivas}">0</h2>
+                        <small class="text-muted">Proyectos en ejecución</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Personal Activo</span>
+                            <div class="bg-success bg-opacity-10 text-success p-2 rounded-circle">
+                                <i class="bi bi-people-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h2 class="fw-bold text-dark mb-0" th:text="${totalPersonalActivo}">0</h2>
+                        <small class="text-muted">Trabajadores en planilla</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Gasto del Mes</span>
+                            <div class="bg-danger bg-opacity-10 text-danger p-2 rounded-circle">
+                                <i class="bi bi-receipt fs-5"></i>
+                            </div>
+                        </div>
+                        <h2 class="fw-bold text-danger mb-0" th:text="'$' + ${#numbers.formatDecimal(kpis.totalGastoAcumulado, 1, 2)}">$0.00</h2>
+                        <small class="text-muted">Compras + Nómina</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase">Balance Mensual</span>
+                            <div class="p-2 rounded-circle" th:classappend="${kpis.balanceGlobal >= 0 ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}">
+                                <i class="bi bi-wallet2 fs-5"></i>
+                            </div>
+                        </div>
+                        <h2 class="fw-bold mb-0" th:classappend="${kpis.balanceGlobal >= 0 ? 'text-success' : 'text-danger'}" 
+                            th:text="'$' + ${#numbers.formatDecimal(kpis.balanceGlobal, 1, 2)}">$0.00</h2>
+                        <small class="text-muted">Cotizado vs Gastado</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRÁFICO RESUMEN Y ESTADO DE PROYECTOS -->
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="fw-bold text-dark mb-0">
+                                <i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Rendimiento por Obra (Mes Actual)
+                            </h6>
+                            <a href="/reportes" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">Ver más <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                        <div style="height: 300px;">
+                            <canvas id="homeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm p-4 bg-white rounded-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="fw-bold text-dark mb-0">
+                                <i class="bi bi-building-check text-success me-2"></i>Estado de Presupuestos
+                            </h6>
+                            <span class="badge bg-light text-dark border px-2 py-1 small">En Vivo</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-light small text-muted">
+                                    <tr>
+                                        <th>Obra</th>
+                                        <th class="text-end">Costo Total</th>
+                                        <th class="text-center">Ejecución</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="p, stat : ${proyectosReporte}" th:if="${stat.index < 5}">
+                                        <td>
+                                            <strong class="text-dark d-block text-truncate" style="max-width: 140px;" th:text="${p.proyectoNombre}"></strong>
+                                            <small class="text-muted" th:text="${p.clienteNombre}"></small>
+                                        </td>
+                                        <td class="text-end fw-bold text-danger" th:text="'$' + ${#numbers.formatDecimal(p.gastoTotal, 1, 2)}"></td>
+                                        <td class="text-center">
+                                            <span th:if="${p.alertaSobrecosto}" class="badge bg-danger rounded-pill px-2">Crítico</span>
+                                            <span th:unless="${p.alertaSobrecosto}" class="badge bg-success-subtle text-success border border-success rounded-pill px-2" th:text="${p.porcentajeEjecutado} + '%'"></span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(proyectosReporte)}">
+                                        <td colspan="3" class="text-center py-4 text-muted">No hay proyectos registrados aún.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script th:replace="~{fragments/layout :: script}"></script>
+
+    <!-- INICIALIZACIÓN DE CHART EN EL DASHBOARD -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const listData = /*[[${proyectosReporte}]]*/ [];
+        const nombres = listData.slice(0, 5).map(item => item.proyectoNombre);
+        const presupuestos = listData.slice(0, 5).map(item => item.presupuestoCotizado);
+        const gastos = listData.slice(0, 5).map(item => item.gastoTotal);
+
+        const ctx = document.getElementById('homeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: nombres.length > 0 ? nombres : ['Sin Datos'],
+                datasets: [
+                    {
+                        label: 'Cotizado ($)',
+                        data: presupuestos.length > 0 ? presupuestos : [0],
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Gasto Real ($)',
+                        data: gastos.length > 0 ? gastos : [0],
+                        backgroundColor: '#ef4444',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(v) { return '$' + v.toLocaleString(); }
+                        }
+                    }
+                }
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Panameño Garcia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;800&display=swap');
+        
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Negro profundo */
+            color: #ffffff;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* FONDO VIBRANTE CORREGIDO (Sin líneas cortadas) */
+        .glow-orb { position: absolute; border-radius: 50%; z-index: -1; animation: float 10s infinite alternate ease-in-out; }
+        .orb-1 { width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, rgba(37, 99, 235, 0) 70%); top: -20%; left: -20%; }
+        .orb-2 { width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(147, 51, 234, 0.25) 0%, rgba(147, 51, 234, 0) 70%); bottom: -20%; right: -10%; animation-delay: -5s; }
+        .orb-3 { width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, rgba(6, 182, 212, 0) 70%); top: 30%; left: 30%; animation-duration: 15s; }
+
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-30px) scale(1.05); }
+        }
+
+        .btn-back {
+            position: absolute; top: 30px; left: 40px;
+            color: #94a3b8; text-decoration: none; font-weight: 500;
+            display: flex; align-items: center; transition: color 0.3s ease; z-index: 10;
+        }
+        .btn-back:hover { color: #ffffff; }
+
+        /* TARJETA MEJORADA */
+        .login-glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 50px 40px;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+            z-index: 5;
+        }
+
+        /* ETIQUETAS DE TEXTO MÁS CLARAS Y VISIBLES */
+        .form-label-custom {
+            color: #e2e8f0; /* Gris muy claro, casi blanco */
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* INPUTS MODERNOS */
+        .input-group-text {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: none; color: #94a3b8;
+        }
+        .form-control-glass {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: none; color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .form-control-glass:focus {
+            background: rgba(255, 255, 255, 0.08); color: #ffffff; box-shadow: none; border-color: rgba(255,255,255,0.1);
+        }
+        .input-group:focus-within .input-group-text, .input-group:focus-within .form-control-glass {
+            border-color: #3b82f6; color: #3b82f6;
+        }
+        .form-control-glass::placeholder { color: #64748b; font-weight: 300; }
+
+        /* ELIMINAR EL FONDO BLANCO DE AUTOCOMPLETADO DEL NAVEGADOR */
+        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+            -webkit-text-fill-color: white !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff; border: none; padding: 14px; border-radius: 12px;
+            font-weight: 700; font-size: 1.05rem; letter-spacing: 0.5px;
+            transition: all 0.3s ease; margin-top: 20px;
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.5);
+        }
+        .btn-login:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -10px rgba(37, 99, 235, 0.8); }
+
+        .alert-glass {
+            background: rgba(239, 68, 68, 0.1); backdrop-filter: blur(10px);
+            border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; color: #fca5a5; font-size: 0.9rem;
+        }
+        .alert-glass-success {
+            background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); color: #86efac;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/" class="btn-back"><i class="bi bi-arrow-left me-2"></i> Volver al Inicio</a>
+
+    <!-- FONDOS VIBRANTES SIN CORTES -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <div class="login-glass-card">
+        <div class="text-center mb-5">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary rounded-circle shadow-lg mb-3" style="width: 70px; height: 70px;">
+                <i class="bi bi-hexagon-fill text-white fs-2"></i>
+            </div>
+            <h3 class="fw-bold tracking-wide text-white mb-1">PG SISTEMA</h3>
+            <p class="text-secondary small">Panel de Administración de Obra</p>
+        </div>
+        
+        <div th:if="${param.error}" class="alert alert-glass p-3 mb-4 d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
+            <div>Usuario o contraseña incorrectos.</div>
+        </div>
+        <div th:if="${param.logout}" class="alert alert-glass alert-glass-success p-3 mb-4 d-flex align-items-center">
+            <i class="bi bi-check-circle-fill me-3 fs-5"></i>
+            <div>Has cerrado sesión correctamente.</div>
+        </div>
+
+        <form th:action="@{/login}" method="post">
+            <div class="mb-4">
+                <label class="form-label-custom">Nombre de usuario</label>
+                <div class="input-group input-group-lg shadow-sm">
+                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                    <input type="text" name="username" class="form-control form-control-glass" placeholder="Ej: admin" required autofocus>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label-custom">Contraseña</label>
+                <div class="input-group input-group-lg shadow-sm">
+                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                    <input type="password" name="password" class="form-control form-control-glass" placeholder="••••••••" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-login w-100">
+                Iniciar Sesión <i class="bi bi-arrow-right ms-2"></i>
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

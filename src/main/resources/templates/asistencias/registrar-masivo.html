@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Registro Diario')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('asistencias')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Completar Jornada: ' + ${#temporals.format(fecha, 'dd/MM/yyyy')})}"></header>
+        <main class="content-body">
+            <form th:action="@{/asistencias/guardar-masivo}" th:object="${dto}" method="post">
+                <div class="card border-0 shadow-sm overflow-hidden">
+                    <div class="card-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold"><i class="bi bi-people me-2"></i>Control de Personal</span>
+                            
+                            <!-- NUEVO BOTÓN DE AUTO-RELLENO -->
+                            <button type="button" id="btnAutofill" class="btn btn-sm btn-outline-light ms-3 rounded-pill px-3 shadow-sm" title="Copia el último horario de cada trabajador">
+                                <i class="bi bi-lightning-charge-fill text-warning"></i> Auto Rellenar
+                            </button>
+                        </div>
+                        
+                        <span class="badge bg-primary px-3 rounded-pill" th:text="${#temporals.format(fecha, 'EEEE dd MMMM')}"></span>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th class="ps-4">Estado</th>
+                                    <th>Trabajador</th>
+                                    <th>Entrada</th>
+                                    <th>Salida</th>
+                                    <th class="text-center pe-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- NUEVO: Inyectamos los datos del último registro como atributos HTML (data-last-in) -->
+                                <tr th:each="row, stat : *{registros}" 
+                                    th:classappend="${row.id != null ? 'bg-light' : ''}"
+                                    th:with="ultimo=${ultimos.get(row.trabajador.id)}"
+                                    th:data-last-in="${ultimo != null and ultimo.horaEntrada != null ? ultimo.horaEntrada : '07:00'}"
+                                    th:data-last-out="${ultimo != null and ultimo.horaSalida != null ? ultimo.horaSalida : '17:00'}"
+                                    class="fila-asistencia">
+                                    <td class="ps-4">
+                                        <span th:if="${row.id != null}" class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
+                                            <i class="bi bi-check-circle-fill"></i> Registrado
+                                        </span>
+                                        <span th:if="${row.id == null}" class="badge bg-warning-subtle text-warning border border-warning text-dark rounded-pill px-3">
+                                            <i class="bi bi-pencil-fill"></i> Por anotar
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <input type="hidden" th:field="*{registros[__${stat.index}__].id}">
+                                        <input type="hidden" th:field="*{registros[__${stat.index}__].trabajador.id}">
+                                        <input type="hidden" th:field="*{registros[__${stat.index}__].fecha}">
+                                        
+                                        <strong th:text="${row.trabajador.nombre}" class="text-dark"></strong>
+                                        <small class="d-block text-muted" th:text="${row.trabajador.puesto.nombre}"></small>
+                                    </td>
+                                    <td>
+                                        <input type="time" th:field="*{registros[__${stat.index}__].horaEntrada}" 
+                                               class="form-control form-control-sm border-0 bg-transparent" 
+                                               th:readonly="${row.id != null}">
+                                    </td>
+                                    <td>
+                                        <input type="time" th:field="*{registros[__${stat.index}__].horaSalida}" 
+                                               class="form-control form-control-sm border-0 bg-transparent" 
+                                               th:readonly="${row.id != null}">
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <i th:if="${row.id != null}" class="bi bi-lock-fill text-muted" title="Registro bloqueado"></i>
+                                        <i th:if="${row.id == null}" class="bi bi-plus-circle-fill text-primary" title="Listo para llenar"></i>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-white p-4 text-end border-top">
+                        <a href="/asistencias" class="btn btn-light rounded-pill px-4 me-2">Regresar</a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow">
+                            Guardar Asistencias Faltantes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+    
+    <script th:replace="~{fragments/layout :: script}"></script>
+    
+    <!-- SCRIPT DE AUTO-RELLENO -->
+    <script>
+        document.getElementById('btnAutofill').addEventListener('click', function() {
+            document.querySelectorAll('.fila-asistencia').forEach(tr => {
+                const inInput = tr.querySelector('input[name$=".horaEntrada"]');
+                const outInput = tr.querySelector('input[name$=".horaSalida"]');
+                
+                // Solo rellenar si el input está vacío y NO está de solo lectura
+                if (inInput && !inInput.readOnly && !inInput.value) {
+                    inInput.value = tr.getAttribute('data-last-in');
+                }
+                if (outInput && !outInput.readOnly && !outInput.value) {
+                    outInput.value = tr.getAttribute('data-last-out');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Planilla Generada')}"></head>
+<body>
+    <style>
+        @media print {
+            #sidebar, #topbar, .btn-print, .breadcrumb { display: none !important; }
+            #main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+            .card { border: none !important; box-shadow: none !important; }
+            body { background-color: white !important; }
+        }
+    </style>
+
+    <aside th:replace="~{fragments/layout :: sidebar('planillas')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Resumen Previo de Pago')}"></header>
+        <main class="content-body">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold mb-0 text-dark">Simulación de Planilla (Aprobada)</h4>
+                    <p class="text-muted mb-0">Del <span class="fw-bold" th:text="${#temporals.format(fInicio, 'dd/MM/yyyy')}"></span> al <span class="fw-bold" th:text="${#temporals.format(fFin, 'dd/MM/yyyy')}"></span></p>
+                </div>
+                <div class="btn-print d-flex gap-2">
+                    <button onclick="window.print()" class="btn btn-outline-dark rounded-pill px-4 shadow-sm"><i class="bi bi-printer me-2"></i>Imprimir / PDF</button>
+                    
+                    <form th:action="@{/planillas/guardar}" method="post" th:if="${not #lists.isEmpty(resumen)}">
+                        <input type="hidden" name="inicio" th:value="${fInicio}">
+                        <input type="hidden" name="fin" th:value="${fFin}">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+                            <i class="bi bi-hdd-network me-2"></i>Guardar y Cerrar Período
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border border-light shadow-sm overflow-hidden bg-white">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="ps-4">Trabajador</th>
+                                <th class="text-center">Hrs Totales</th>
+                                <th class="text-end">Salario Base</th>
+                                <th class="text-end">Pago Extras</th>
+                                <th class="text-end text-info">Bonos</th>
+                                <th class="text-end text-danger">Deducciones</th>
+                                <th class="pe-4 text-end fs-6">A Recibir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="r : ${resumen}">
+                                <td class="ps-4">
+                                    <strong th:text="${r.trabajador.nombre}" class="text-dark d-block text-truncate" style="max-width: 200px;"></strong>
+                                    <small class="text-muted font-monospace" th:text="'DUI: ' + ${r.trabajador.dui}"></small>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary" th:text="${#numbers.formatDecimal(r.horasBase + r.horasExtrasDiurnas + r.horasExtrasNocturnas, 1, 1)} + 'h'"></td>
+                                <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(r.salarioBase, 1, 2)}"></td>
+                                <td class="text-end text-success fw-bold" th:text="'+$' + ${#numbers.formatDecimal(r.montoExtras, 1, 2)}"></td>
+                                <td class="text-end text-info fw-bold" th:text="'+$' + ${#numbers.formatDecimal(r.bonos != null ? r.bonos : 0.0, 1, 2)}"></td>
+                                <td class="text-end text-danger fw-bold" th:text="'-$' + ${#numbers.formatDecimal(r.deducciones, 1, 2)}"></td>
+                                <td class="pe-4 text-end fw-bold text-primary fs-6">
+                                    <span th:text="'$' + ${#numbers.formatDecimal(r.salarioNeto, 1, 2)}"></span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(resumen)}">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-folder-x display-4 d-block mb-3 opacity-50"></i>
+                                    No hay jornadas registradas en este período.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light border-top" th:unless="${#lists.isEmpty(resumen)}">
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold text-uppercase py-3">TOTAL NÓMINA A PAGAR (NETO):</td>
+                                <td class="text-end text-info fw-bold py-3" th:text="'+$' + ${#numbers.formatDecimal(totalBonos, 1, 2)}"></td>
+                                <td class="text-end text-danger fw-bold py-3" th:text="'Impuestos: $' + ${#numbers.formatDecimal(totalDeducciones, 1, 2)}"></td>
+                                <td class="text-end pe-4 fw-bold text-dark fs-5 py-3" th:text="'$' + ${#numbers.formatDecimal(totalNomina, 1, 2)}"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="row mt-5 text-center btn-print" th:unless="${#lists.isEmpty(resumen)}">
+                <div class="col-4 offset-4 border-top border-dark pt-2">
+                    <p class="fw-bold mb-0">Firma Contadora</p>
+                    <small class="text-muted" sec:authentication="name"></small>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+</body>
+</html>

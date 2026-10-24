@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Detalle de Planilla')}"></head>
+<body>
+    <style>
+        @media print {
+            #sidebar, #topbar, .btn-print, .breadcrumb { display: none !important; }
+            #main-content { margin-left: 0 !important; width: 100% !important; padding: 0 !important; }
+            .card { border: none !important; box-shadow: none !important; }
+            body { background-color: white !important; }
+        }
+    </style>
+
+    <aside th:replace="~{fragments/layout :: sidebar('planillas')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Detalle de Nómina Cerrada')}"></header>
+        <main class="content-body">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold mb-0 text-dark">
+                        Planilla Folio <span class="text-primary" th:text="'#' + ${planilla.id}"></span>
+                    </h4>
+                    <p class="text-muted mb-0">Período: <span class="fw-bold" th:text="${#temporals.format(planilla.fechaInicio, 'dd/MM/yyyy')}"></span> al <span class="fw-bold" th:text="${#temporals.format(planilla.fechaFin, 'dd/MM/yyyy')}"></span></p>
+                </div>
+                <div class="btn-print d-flex gap-2">
+                    <a href="/planillas/historial" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm"><i class="bi bi-arrow-left me-2"></i>Volver al Historial</a>
+                    <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 shadow-sm"><i class="bi bi-printer me-2"></i>Imprimir / PDF</button>
+                </div>
+            </div>
+
+            <div class="alert alert-light border shadow-sm mb-4 btn-print d-flex align-items-center">
+                <i class="bi bi-info-circle-fill text-primary fs-4 me-3"></i>
+                <div>
+                    <strong>Documento Histórico:</strong> Esta planilla fue generada el 
+                    <span th:text="${#temporals.format(planilla.fechaGeneracion, 'dd MMMM yyyy, HH:mm')}"></span>. 
+                    Sus datos son de solo lectura y no pueden modificarse.
+                </div>
+            </div>
+
+            <div class="card border border-light shadow-sm overflow-hidden bg-white">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="ps-4">Trabajador</th>
+                                <th class="text-center">Hrs Totales</th>
+                                <th class="text-end">Salario Base</th>
+                                <th class="text-end">Pago Extras</th>
+                                <th class="text-end text-info">Bonos</th>
+                                <th class="text-end text-danger">Deducciones</th>
+                                <th class="pe-4 text-end fs-6">Pagado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="d : ${planilla.detalles}">
+                                <td class="ps-4">
+                                    <strong th:text="${d.trabajador.nombre}" class="text-dark d-block text-truncate" style="max-width: 200px;"></strong>
+                                    <small class="text-muted font-monospace" th:text="'DUI: ' + ${d.trabajador.dui}"></small>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary" th:text="${#numbers.formatDecimal(d.horasBase + d.horasExtrasDiurnas + d.horasExtrasNocturnas, 1, 1)} + 'h'"></td>
+                                <td class="text-end" th:text="'$' + ${#numbers.formatDecimal(d.salarioBase, 1, 2)}"></td>
+                                <td class="text-end text-success fw-bold" th:text="'+$' + ${#numbers.formatDecimal(d.montoExtras, 1, 2)}"></td>
+                                <td class="text-end text-info fw-bold" th:text="'+$' + ${#numbers.formatDecimal(d.bonos != null ? d.bonos : 0.0, 1, 2)}"></td>
+                                <td class="text-end text-danger fw-bold" th:text="'-$' + ${#numbers.formatDecimal(d.deducciones, 1, 2)}"></td>
+                                <td class="pe-4 text-end fw-bold text-primary fs-6">
+                                    <span th:text="'$' + ${#numbers.formatDecimal(d.salarioNeto, 1, 2)}"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light border-top">
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold text-uppercase py-3">TOTAL PAGADO (NETO):</td>
+                                <td class="text-end text-info fw-bold py-3" th:text="'+$' + ${#numbers.formatDecimal(#aggregates.sum(planilla.detalles.![bonos != null ? bonos : 0.0]), 1, 2)}"></td>
+                                <td class="text-end text-danger fw-bold py-3" th:text="'Impuestos: $' + ${#numbers.formatDecimal(#aggregates.sum(planilla.detalles.![deducciones]), 1, 2)}"></td>
+                                <td class="text-end pe-4 fw-bold text-dark fs-5 py-3" th:text="'$' + ${#numbers.formatDecimal(planilla.totalPagar, 1, 2)}"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="row mt-5 text-center btn-print">
+                <div class="col-4 offset-4 border-top border-dark pt-2">
+                    <p class="fw-bold mb-0">Nómina Cerrada / Archivado</p>
+                    <small class="text-muted">Constructora Panameño Garcia</small>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+</body>
+</html>

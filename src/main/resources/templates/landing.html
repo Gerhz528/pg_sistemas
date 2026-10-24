@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PG Sistema | Panameño Garcia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;800&display=swap');
+        
+        body, html {
+            margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Negro profundo */
+            color: #ffffff; overflow-x: hidden;
+        }
+
+        /* EL MISMO FONDO COLORIDO DEL LOGIN */
+        .glow-orb { position: absolute; border-radius: 50%; filter: blur(100px); z-index: -1; animation: float 10s infinite alternate ease-in-out; }
+        .orb-1 { width: 50vw; height: 50vw; background: rgba(37, 99, 235, 0.25); top: -10%; left: -10%; }
+        .orb-2 { width: 40vw; height: 40vw; background: rgba(147, 51, 234, 0.25); bottom: -10%; right: -5%; animation-delay: -5s; }
+        .orb-3 { width: 30vw; height: 30vw; background: rgba(6, 182, 212, 0.2); top: 40%; left: 40%; animation-duration: 15s; }
+
+        @keyframes float {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-50px) scale(1.05); }
+        }
+
+        .navbar-landing {
+            position: fixed; top: 0; width: 100%; padding: 20px 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .brand-logo { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white; padding: 10px 25px; border-radius: 50px; font-weight: 500;
+            transition: all 0.3s ease; text-decoration: none; backdrop-filter: blur(5px);
+        }
+        .btn-glass:hover { background: rgba(255, 255, 255, 0.15); color: white; transform: translateY(-2px); }
+
+        .hero-section { height: 100vh; display: flex; align-items: center; justify-content: space-between; padding: 0 10%; position: relative; }
+        .hero-content { max-width: 600px; z-index: 10; }
+        
+        .hero-title {
+            font-size: 4.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 20px;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero-subtitle { font-size: 1.2rem; color: #cbd5e1; margin-bottom: 40px; line-height: 1.6; font-weight: 300; }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #3b82f6, #2563eb); border: none;
+            color: white; padding: 15px 35px; border-radius: 50px; font-weight: 700;
+            font-size: 1.1rem; text-decoration: none; display: inline-flex; align-items: center;
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.8); transition: all 0.3s ease;
+        }
+        .btn-primary-custom:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -10px rgba(37, 99, 235, 1); color: white; }
+
+        .floating-element {
+            width: 450px; height: 450px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(147, 51, 234, 0.05));
+            border: 1px solid rgba(255,255,255,0.05); border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 0 50px rgba(255,255,255,0.02), 0 25px 50px -12px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px); animation: morph 8s ease-in-out infinite, float-obj 6s ease-in-out infinite; z-index: 5;
+        }
+
+        .floating-icon { font-size: 8rem; color: #60a5fa; animation: float-reverse 4s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(96, 165, 250, 0.4)); }
+
+        @keyframes float-obj { 0% { transform: translateY(0px); } 50% { transform: translateY(-30px); } 100% { transform: translateY(0px); } }
+        @keyframes float-reverse { 0% { transform: translateY(0px); } 50% { transform: translateY(20px); } 100% { transform: translateY(0px); } }
+        @keyframes morph { 0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; } 50% { border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%; } 100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; } }
+
+        @media (max-width: 992px) {
+            .hero-section { flex-direction: column; text-align: center; justify-content: center; gap: 50px; }
+            .hero-title { font-size: 3.5rem; }
+            .navbar-landing { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fondos Vibrantes -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <nav class="navbar-landing">
+        <a href="/" class="brand-logo">
+            <i class="bi bi-hexagon-fill text-primary"></i> PG SISTEMA
+        </a>
+    </nav>
+
+    <main class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Gestión de Obra Inteligente.</h1>
+            <p class="hero-subtitle">
+                Centraliza planillas, facturación, control de clientes y operaciones de la <strong>Constructora Panameño Garcia</strong> en un entorno rápido y seguro.
+            </p>
+            <div class="d-flex gap-3 mt-4 flex-wrap">
+                <a href="/login" class="btn-primary-custom">
+                    Iniciar Sesión <i class="bi bi-arrow-right ms-2 fs-5"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="floating-element d-none d-lg-flex">
+            <i class="bi bi-buildings floating-icon"></i>
+        </div>
+    </main>
+
+</body>
+</html>

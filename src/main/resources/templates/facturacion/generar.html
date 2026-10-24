@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Exportar para Facturación')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('facturacion')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Exportación a Sistema Llama')}"></header>
+        <main class="content-body">
+
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4"><i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span></div>
+            <div th:if="${info}" class="alert alert-warning border-0 shadow-sm mb-4 text-dark"><i class="bi bi-info-circle-fill me-2"></i> <span th:text="${info}"></span></div>
+
+            <div class="d-flex justify-content-end mb-3">
+                <a href="/facturacion/historial" class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-clock-history me-2"></i>Ver Historial de Exportaciones
+                </a>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm p-5 text-center">
+                        <i class="bi bi-file-earmark-arrow-down-fill display-1 text-primary mb-4"></i>
+                        <h3 class="fw-bold mb-4">Generar Archivo de Integración</h3>
+                        
+                        <form id="formExportar" th:action="@{/facturacion/generar}" method="post">
+                            <div class="mb-4 text-start">
+                                <label class="form-label fw-bold small text-muted">Seleccione Cliente a Facturar</label>
+                                <select name="clienteId" class="form-select bg-light border-0 fw-bold" required>
+                                    <option value="">-- Elija un Cliente --</option>
+                                    <option th:each="c : ${clientes}" th:value="${c.id}" th:text="${c.nombre}"></option>
+                                </select>
+                            </div>
+
+                            <div class="row mb-4 text-start">
+                                <div class="col-6">
+                                    <label class="form-label fw-bold small text-muted">Desde</label>
+                                    <input type="date" name="inicio" th:value="${fechaInicio}" class="form-control bg-light border-0" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-bold small text-muted">Hasta</label>
+                                    <input type="date" name="fin" th:value="${fechaFin}" class="form-control bg-light border-0" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-5 text-start">
+                                <label class="form-label fw-bold small text-muted">Formato de Salida</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check border rounded-3 p-3 flex-fill bg-light text-center">
+                                        <input class="form-check-input float-none ms-0 mb-2" type="radio" name="formato" value="EXCEL" id="fmtExcel" checked>
+                                        <label class="form-check-label fw-bold text-success d-block" for="fmtExcel"><i class="bi bi-file-earmark-excel-fill fs-5 d-block"></i> EXCEL (.xlsx)</label>
+                                    </div>
+                                    <div class="form-check border rounded-3 p-3 flex-fill bg-light text-center">
+                                        <input class="form-check-input float-none ms-0 mb-2" type="radio" name="formato" value="JSON" id="fmtJson">
+                                        <label class="form-check-label fw-bold text-warning text-dark d-block" for="fmtJson"><i class="bi bi-braces fs-5 d-block"></i> JSON</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="loadingSection" class="d-none text-center mb-4">
+                                <h6 class="fw-bold text-primary mb-2 small">Extrayendo datos financieros y empaquetando...</h6>
+                                <div class="progress" style="height: 8px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="btnGenerar" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm">
+                                Generar Archivo <i class="bi bi-download ms-2"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script th:replace="~{fragments/layout :: script}"></script>
+    <script>
+        document.getElementById('btnGenerar').addEventListener('click', function() {
+            const loadingSection = document.getElementById('loadingSection');
+            const progressBar = document.getElementById('progressBar');
+            const btn = document.getElementById('btnGenerar');
+            const form = document.getElementById('formExportar');
+
+            if(!form.checkValidity()) { form.reportValidity(); return; }
+
+            loadingSection.classList.remove('d-none');
+            btn.classList.add('disabled');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando...';
+
+            let width = 0;
+            const interval = setInterval(() => {
+                width += 20;
+                progressBar.style.width = width + '%';
+                if(width >= 100) {
+                    clearInterval(interval);
+                    form.submit(); 
+                }
+            }, 150); 
+        });
+    </script>
+</body>
+</html>

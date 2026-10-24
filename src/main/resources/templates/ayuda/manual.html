@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Manual de Ayuda y Operaciones')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('ayuda')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Centro de Documentación y Guía')}"></header>
+        <main class="content-body" style="background-color: #f8fafc;">
+
+            <!-- ENCABEZADO Y ROLES DETECTADOS -->
+            <div class="card border-0 shadow-sm p-4 p-md-5 mb-4 rounded-4 text-white" 
+                 style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <span class="badge bg-primary px-3 py-2 rounded-pill mb-2">
+                            <i class="bi bi-book-half me-1"></i> Manual de Procedimientos
+                        </span>
+                        <h2 class="fw-bold mb-2">Manual Operativo Dinámico</h2>
+                        <p class="opacity-75 lead mb-0" style="font-size: 1rem;">
+                            Bienvenido, <strong th:text="${#authentication.name}">Usuario</strong>. 
+                            El sistema ha identificado tus credenciales y desplegado las instrucciones correspondientes a tus roles activos:
+                        </p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span sec:authorize="hasRole('ADMINISTRADOR')" class="badge bg-danger px-3 py-2 rounded-pill fs-6">ADMINISTRADOR</span>
+                        <span sec:authorize="hasRole('JEFE')" class="badge bg-warning text-dark px-3 py-2 rounded-pill fs-6">JEFE DE OBRA</span>
+                        <span sec:authorize="hasRole('SUPERVISOR')" class="badge bg-success px-3 py-2 rounded-pill fs-6">SUPERVISOR DE CAMPO</span>
+                        <span sec:authorize="hasRole('CONTADORA')" class="badge bg-info text-dark px-3 py-2 rounded-pill fs-6">CONTADORA</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NAVEGACIÓN RÁPIDA POR SECCIONES ACTIVAS -->
+            <div class="card border-0 shadow-sm p-3 mb-4 bg-white rounded-4">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="small fw-bold text-muted me-2"><i class="bi bi-compass-fill text-primary me-1"></i>Saltar a sección:</span>
+                    <a sec:authorize="hasRole('SUPERVISOR')" href="#sec-supervisor" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">Guía Supervisor</a>
+                    <a sec:authorize="hasRole('JEFE')" href="#sec-jefe" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 fw-bold">Guía Jefe</a>
+                    <a sec:authorize="hasRole('CONTADORA')" href="#sec-contadora" class="btn btn-sm btn-outline-info text-dark rounded-pill px-3 fw-bold">Guía Contadora</a>
+                    <a sec:authorize="hasRole('ADMINISTRADOR')" href="#sec-admin" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">Guía Administrador</a>
+                    <a href="#sec-simuladores" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold text-white"><i class="bi bi-cpu-fill me-1"></i>Simuladores Interactivos</a>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- 1. GUÍA ROL: SUPERVISOR DE CAMPO           -->
+            <!-- ========================================== -->
+            <div sec:authorize="hasRole('SUPERVISOR')" id="sec-supervisor" class="mb-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-success p-2 rounded-circle"><i class="bi bi-cone-striped fs-5 text-white"></i></span>
+                    <h4 class="fw-bold text-dark mb-0">Módulos del Rol: SUPERVISOR DE CAMPO</h4>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Expedientes y Personal -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-success mb-3"><i class="bi bi-person-badge me-2"></i>1. Gestión de Trabajadores (/trabajadores)</h5>
+                            <p class="text-muted small">Módulo para dar de alta al personal operativo de las obras y mantener sus expedientes digitales vigentes.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Formato DUI:</strong> Obligatorio ingresar con guión <code>00000000-0</code>. El sistema previene automáticamente duplicados en base de datos.</li>
+                                <li><strong>Tarifas por Puesto:</strong> Antes de registrar un trabajador, debe existir su cargo configurado en <em>"Cargos"</em> con su salario base por hora ($).</li>
+                                <li><strong>Expediente PDF:</strong> Puedes adjuntar fotografía formal (JPG/PNG), copia del DUI escaneado y Curriculum Vitae en formato PDF.</li>
+                                <li><strong>Asignación de Bonos:</strong> Al abrir el perfil individual del trabajador, puedes registrar bonificaciones monetarias por puntualidad o productividad.</li>
+                            </ul>
+                            <div class="alert alert-light border rounded-3 p-2 small text-muted">
+                                <i class="bi bi-info-circle-fill text-success me-1"></i> <strong>Regla de negocio:</strong> Solo los empleados con estado <code>Activo</code> figurarán en las listas de asistencia diaria.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asistencias y Horas Extra -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-success mb-3"><i class="bi bi-calendar-check me-2"></i>2. Control Diario de Asistencias (/asistencias)</h5>
+                            <p class="text-muted small">Registro riguroso de las horas de entrada y salida de cada cuadrilla.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Registro Masivo:</strong> Ingresa a <em>"Reportar Día"</em>, selecciona la fecha y completa las horas en una sola pantalla para todo el personal.</li>
+                                <li><strong>Botón Auto-Rellenar:</strong> Copia automáticamente la última hora habitual de entrada/salida registrada de cada empleado para agilizar el llenado.</li>
+                                <li><strong>Importación Excel (.xlsx):</strong> En <em>"Importar Excel"</em> puedes cargar un archivo con columnas: <code>DUI | Fecha | Entrada | Salida</code>.</li>
+                                <li><strong>Horas Extra:</strong> Dentro de la ficha de detalle de la asistencia puedes añadir horas extra diurnas o nocturnas justificando el motivo antes de que el día sea finalizado.</li>
+                                <li><strong>Finalizar Día:</strong> Al presionar <em>"Finalizar Día"</em>, la fecha queda bloqueada contra manipulaciones posteriores.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Gastos de Campo y Bodega -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                            <h5 class="fw-bold text-success mb-3"><i class="bi bi-camera-fill me-2"></i>3. Comprobantes de Campo y Bodega de Herramientas</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6 border-end pe-md-4">
+                                    <h6 class="fw-bold text-dark">Gastos y Facturas (/facturas)</h6>
+                                    <p class="small text-muted mb-2">Captura de compras imprevistas realizadas en ferreterías o materiales en ruta:</p>
+                                    <ul class="small text-secondary ps-3 mb-0">
+                                        <li><strong>Cámara de Celular:</strong> El botón <em>"Capturar Gasto"</em> activa directamente la cámara fotográfica en dispositivos móviles.</li>
+                                        <li><strong>Regla de Fechas (HU-29):</strong> Está estrictamente prohibido registrar facturas con fecha posterior al día de hoy.</li>
+                                        <li><strong>Monto Mayor a Cero:</strong> No se admiten valores negativos ni comprobantes en $0.00.</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 ps-md-4">
+                                    <h6 class="fw-bold text-dark">Bodega de Herramientas (/inventario)</h6>
+                                    <p class="small text-muted mb-2">Control de entradas y salidas de equipo menor y pesado:</p>
+                                    <ul class="small text-secondary ps-3 mb-0">
+                                        <li><strong>Asignación (Salida):</strong> Resta stock de bodega y lo asocia al proyecto y al responsable de cuadrilla.</li>
+                                        <li><strong>Devolución (Entrada):</strong> Reintegra el equipo a la bodega sumando stock.</li>
+                                        <li><strong>Kardex:</strong> El botón <em>"Kardex"</em> muestra la trazabilidad histórica de cada herramienta.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- 2. GUÍA ROL: JEFE DE OBRA                  -->
+            <!-- ========================================== -->
+            <div sec:authorize="hasRole('JEFE')" id="sec-jefe" class="mb-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-warning text-dark p-2 rounded-circle"><i class="bi bi-briefcase-fill fs-5"></i></span>
+                    <h4 class="fw-bold text-dark mb-0">Módulos del Rol: JEFE DE OBRA Y GERENCIA</h4>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Clientes y Proyectos -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-building me-2"></i>1. Directorio de Clientes y Obras (/proyectos)</h5>
+                            <p class="text-muted small">Administración comercial de contratos y ciclo de vida de las construcciones.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Clientes (/clientes):</strong> Registro de personas naturales o empresas con validación de DUI salvadoreño.</li>
+                                <li><strong>Creación de Proyectos:</strong> Establece la fecha de inicio y fin estimada. La fecha de culminación no puede ser anterior a la inicial.</li>
+                                <li><strong>Dashboard de Obra (Gantt):</strong> Al pulsar <em>"Gantt"</em> se accede al cronograma interactivo con dependencias entre fases.</li>
+                                <li><strong>Asistente IA de Cronograma:</strong> Si el cronograma está vacío, presiona el botón amarillo para autogenerar las 5 etapas lógicas de obra civil.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Cotizaciones y Auditoría de Jornadas -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-receipt-cutoff me-2"></i>2. Cotizaciones y Validación de Jornadas</h5>
+                            <p class="text-muted small">Elaboración de presupuestos formales y aprobación de nómina.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Maestro-Detalle (/cotizaciones/nueva):</strong> Generador dinámico con cálculo automático en vivo de Subtotal, <strong>IVA (13%)</strong> y Total.</li>
+                                <li><strong>Impresión / PDF:</strong> Genera la hoja oficial con membrete corporativo lista para firma del cliente.</li>
+                                <li><strong>Validación de Asistencias:</strong> El Jefe es el único con facultad para <code>Aprobar</code> o <code>Rechazar</code> las jornadas y horas extra ingresadas por los supervisores.</li>
+                                <li><strong>Regla de Bloqueo:</strong> Una cotización en estado <code>Aprobada</code> o <code>Cerrada</code> no puede ser editada para salvaguardar la oferta contractual.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- 3. GUÍA ROL: CONTADORA                     -->
+            <!-- ========================================== -->
+            <div sec:authorize="hasRole('CONTADORA')" id="sec-contadora" class="mb-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-info text-dark p-2 rounded-circle"><i class="bi bi-calculator-fill fs-5"></i></span>
+                    <h4 class="fw-bold text-dark mb-0">Módulos del Rol: ÁREA CONTABLE Y FINANCIERA</h4>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Nómina y Planillas -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-cash-stack text-success me-2"></i>1. Cálculo de Planillas (/planillas)</h5>
+                            <p class="text-muted small">Motor de liquidación salarial con fórmulas de ley salvadoreña.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Filtro Quincenal / Mensual:</strong> Selecciona el mes y período. El sistema analiza exclusivamente asistencias con estado <code>APROBADO</code>.</li>
+                                <li><strong>Recargo de Horas Extras:</strong> Diurnas al doble (<code>2.0x</code>) y nocturnas al dos y medio (<code>2.5x</code>).</li>
+                                <li><strong>Deducciones Legales:</strong> Aplica automáticamente la tasa retenida del <strong>10.25%</strong> sobre salarios y extras.</li>
+                                <li><strong>Bonos Acumulados:</strong> Suma directamente al salario neto sin deducción fiscal según normativa.</li>
+                                <li><strong>Cierre de Planilla:</strong> El botón <em>"Guardar y Cerrar Período"</em> crea un registro histórico inmutable con folio único.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Facturación Llama y Reportes -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-file-earmark-code text-primary me-2"></i>2. Integración Llama y Reportes Gerenciales</h5>
+                            <p class="text-muted small">Exportación al Ministerio de Hacienda y consolidación analítica.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Exportación Llama (/facturacion/generar):</strong> Extrae cotizaciones aprobadas de un cliente y las empaqueta en <strong>Excel (.xlsx)</strong> o <strong>JSON</strong> formateado.</li>
+                                <li><strong>Informes Gerenciales (/reportes):</strong> Tablero con comparativa de Presupuesto Cotizado vs. Gasto Real (Facturas + Planillas).</li>
+                                <li><strong>Exportación Contable:</strong> Descarga de hojas de balance en Excel con estilos de moneda y formato listo para auditoría externa.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- 4. GUÍA ROL: ADMINISTRADOR                 -->
+            <!-- ========================================== -->
+            <div sec:authorize="hasRole('ADMINISTRADOR')" id="sec-admin" class="mb-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-danger p-2 rounded-circle"><i class="bi bi-shield-lock-fill fs-5 text-white"></i></span>
+                    <h4 class="fw-bold text-dark mb-0">Módulos del Rol: ADMINISTRACIÓN Y SEGURIDAD</h4>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-danger mb-3"><i class="bi bi-people-fill me-2"></i>1. Gestión de Cuentas y Accesos (/usuarios)</h5>
+                            <p class="text-muted small">Control de credenciales y asignación de perfiles de usuario.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Principio de Menor Privilegio:</strong> Cada usuario debe tener únicamente los roles indispensables para su labor.</li>
+                                <li><strong>Política de Contraseñas Seguras (HU-31):</strong> El sistema valida obligatoriamente mínimo 8 caracteres con mayúscula, minúscula, dígito numérico y símbolo especial (<code>@#$%^&+=!._-</code>).</li>
+                                <li><strong>Desactivación de Cuentas:</strong> Puedes desmarcar <em>"Usuario Activo"</em> para suspender el acceso de inmediato sin borrar el historial.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                            <h5 class="fw-bold text-danger mb-3"><i class="bi bi-journal-text me-2"></i>2. Auditoría Forense y Bitácora (/auditoria)</h5>
+                            <p class="text-muted small">Trazabilidad inmutable de todas las operaciones realizadas en el sistema.</p>
+                            <ul class="small text-secondary ps-3 mb-3">
+                                <li><strong>Registro Automático:</strong> Captura inicio de sesión (Login), IP de origen, usuario, rol y descripción técnica del evento.</li>
+                                <li><strong>Filtros Avanzados:</strong> Permite reconstruir líneas de tiempo por usuario, módulo específico o rangos de fecha.</li>
+                                <li><strong>Alertas de Sobrecosto:</strong> Registra automáticamente en la bitácora cuando un proyecto excede el 90% de su presupuesto.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- 5. SIMULADORES INTERACTIVOS EN VIVO        -->
+            <!-- ========================================== -->
+            <div id="sec-simuladores" class="mb-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-primary p-2 rounded-circle"><i class="bi bi-cpu-fill fs-5 text-white"></i></span>
+                    <h4 class="fw-bold text-dark mb-0">Simuladores y Herramientas Interactivas</h4>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Simulador 1: Horas Extra y Planilla -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-stopwatch text-success me-2"></i>Calculadora de Horas Extra</h6>
+                            <div class="mb-2">
+                                <label class="small text-muted fw-bold">Tarifa Base por Hora ($)</label>
+                                <input type="number" id="simTarifa" class="form-control form-control-sm bg-light border-0" value="3.50" step="0.25">
+                            </div>
+                            <div class="mb-2">
+                                <label class="small text-muted fw-bold">Horas Extra Diurnas (Factor 2.0x)</label>
+                                <input type="number" id="simDiurnas" class="form-control form-control-sm bg-light border-0" value="4" step="0.5">
+                            </div>
+                            <div class="mb-3">
+                                <label class="small text-muted fw-bold">Horas Extra Nocturnas (Factor 2.5x)</label>
+                                <input type="number" id="simNocturnas" class="form-control form-control-sm bg-light border-0" value="2" step="0.5">
+                            </div>
+                            <div class="p-3 bg-light rounded-3 text-center border">
+                                <small class="text-muted d-block fw-bold">TOTAL PAGO HORAS EXTRAS:</small>
+                                <h4 class="fw-bold text-success mb-0" id="simTotalExtras">$45.50</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simulador 2: Umbral de Sobrecosto 90% -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-speedometer2 text-danger me-2"></i>Semáforo de Sobrecosto (HU-32)</h6>
+                            <div class="mb-2">
+                                <label class="small text-muted fw-bold">Presupuesto Cotizado ($)</label>
+                                <input type="number" id="simPresupuesto" class="form-control form-control-sm bg-light border-0" value="10000">
+                            </div>
+                            <div class="mb-3">
+                                <label class="small text-muted fw-bold">Gasto Acumulado Actual ($)</label>
+                                <input type="number" id="simGasto" class="form-control form-control-sm bg-light border-0" value="8500">
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div id="simBarra" class="progress-bar bg-success" style="width: 85%;"></div>
+                            </div>
+                            <div class="p-3 rounded-3 text-center border" id="simCajaAlerta">
+                                <span class="badge bg-success rounded-pill px-3 py-1 fw-bold" id="simBadge">En Margen Seguro (85%)</span>
+                                <small class="d-block text-muted mt-1" id="simTextoAlerta">Gasto por debajo del 90% permitido.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simulador 3: Validador de Seguridad de Contraseñas -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check text-primary me-2"></i>Comprobador de Contraseñas (HU-31)</h6>
+                            <div class="mb-3">
+                                <label class="small text-muted fw-bold">Escribe una clave para probar:</label>
+                                <input type="text" id="simClave" class="form-control form-control-sm bg-light border-0 font-monospace" placeholder="Ej: Obra2026$#">
+                            </div>
+                            <ul class="list-unstyled small mb-3">
+                                <li id="ruleLen" class="text-danger"><i class="bi bi-x-circle me-1"></i>Mínimo 8 caracteres</li>
+                                <li id="ruleMayus" class="text-danger"><i class="bi bi-x-circle me-1"></i>Al menos una mayúscula</li>
+                                <li id="ruleNum" class="text-danger"><i class="bi bi-x-circle me-1"></i>Al menos un número</li>
+                                <li id="ruleSim" class="text-danger"><i class="bi bi-x-circle me-1"></i>Símbolo especial (@#$%^&+=!._-)</li>
+                            </ul>
+                            <div class="text-center p-2 rounded-3 bg-light border">
+                                <span id="simPassResultado" class="fw-bold text-danger small">Contraseña Inválida</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script th:replace="~{fragments/layout :: script}"></script>
+
+    <!-- SCRIPT DE LOS SIMULADORES INTERACTIVOS -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Simulador 1: Horas Extras
+            const simTarifa = document.getElementById('simTarifa');
+            const simDiurnas = document.getElementById('simDiurnas');
+            const simNocturnas = document.getElementById('simNocturnas');
+            const simTotalExtras = document.getElementById('simTotalExtras');
+
+            function calcExtras() {
+                const tarifa = parseFloat(simTarifa.value) || 0;
+                const d = parseFloat(simDiurnas.value) || 0;
+                const n = parseFloat(simNocturnas.value) || 0;
+                const total = (d * tarifa * 2.0) + (n * tarifa * 2.5);
+                simTotalExtras.innerText = '$' + total.toFixed(2);
+            }
+            [simTarifa, simDiurnas, simNocturnas].forEach(el => el.addEventListener('input', calcExtras));
+
+            // Simulador 2: Umbral de Sobrecosto (90%)
+            const simPresupuesto = document.getElementById('simPresupuesto');
+            const simGasto = document.getElementById('simGasto');
+            const simBarra = document.getElementById('simBarra');
+            const simBadge = document.getElementById('simBadge');
+            const simTextoAlerta = document.getElementById('simTextoAlerta');
+
+            function calcUmbral() {
+                const p = parseFloat(simPresupuesto.value) || 1;
+                const g = parseFloat(simGasto.value) || 0;
+                const pct = Math.min(100, Math.max(0, (g / p) * 100));
+
+                simBarra.style.width = pct + '%';
+
+                if (pct >= 90) {
+                    simBarra.className = 'progress-bar bg-danger';
+                    simBadge.className = 'badge bg-danger rounded-pill px-3 py-1 fw-bold';
+                    simBadge.innerText = '¡ALERTA CRÍTICA (' + pct.toFixed(1) + '%)!';
+                    simTextoAlerta.innerText = 'El gasto superó el 90% del presupuesto cotizado.';
+                } else {
+                    simBarra.className = 'progress-bar bg-success';
+                    simBadge.className = 'badge bg-success rounded-pill px-3 py-1 fw-bold';
+                    simBadge.innerText = 'En Margen Seguro (' + pct.toFixed(1) + '%)';
+                    simTextoAlerta.innerText = 'Gasto por debajo del 90% permitido.';
+                }
+            }
+            [simPresupuesto, simGasto].forEach(el => el.addEventListener('input', calcUmbral));
+
+            // Simulador 3: Validador de Password
+            const simClave = document.getElementById('simClave');
+            const ruleLen = document.getElementById('ruleLen');
+            const ruleMayus = document.getElementById('ruleMayus');
+            const ruleNum = document.getElementById('ruleNum');
+            const ruleSim = document.getElementById('ruleSim');
+            const simPassResultado = document.getElementById('simPassResultado');
+
+            simClave.addEventListener('input', function () {
+                const val = simClave.value;
+                const hasLen = val.length >= 8;
+                const hasMayus = /[A-Z]/.test(val);
+                const hasNum = /[0-9]/.test(val);
+                const hasSim = /[@#$%^&+=!._-]/.test(val);
+
+                setRule(ruleLen, hasLen, 'Mínimo 8 caracteres');
+                setRule(ruleMayus, hasMayus, 'Al menos una mayúscula');
+                setRule(ruleNum, hasNum, 'Al menos un número');
+                setRule(ruleSim, hasSim, 'Símbolo especial (@#$%^&+=!._-)');
+
+                if (hasLen && hasMayus && hasNum && hasSim) {
+                    simPassResultado.className = 'fw-bold text-success small';
+                    simPassResultado.innerText = '✓ Cumple Directiva de Seguridad';
+                } else {
+                    simPassResultado.className = 'fw-bold text-danger small';
+                    simPassResultado.innerText = '✗ Contraseña Inválida';
+                }
+            });
+
+            function setRule(el, valid, text) {
+                if (valid) {
+                    el.className = 'text-success';
+                    el.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>' + text;
+                } else {
+                    el.className = 'text-danger';
+                    el.innerHTML = '<i class="bi bi-x-circle me-1"></i>' + text;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

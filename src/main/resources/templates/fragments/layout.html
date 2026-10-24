@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- HEAD FRAGMENT -->
+<head th:fragment="head(titulo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${titulo} + ' | PG SISTEMA'">PG SISTEMA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+
+        #sidebar { 
+            height: 100vh; 
+            width: 260px; 
+            background-color: #0f172a; 
+            transition: all 0.3s ease; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: 1000; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #sidebar.collapsed { width: 80px; }
+        #sidebar.collapsed .sidebar-text, #sidebar.collapsed .brand-text { display: none; }
+        
+        #sidebar .sidebar-nav-container {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 15px;
+        }
+
+        #sidebar .sidebar-nav-container::-webkit-scrollbar {
+            width: 5px;
+        }
+        #sidebar .sidebar-nav-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        #sidebar .sidebar-nav-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        #sidebar .sidebar-nav-container::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+
+        #sidebar .nav-link { 
+            color: #94a3b8; 
+            padding: 11px 18px; 
+            border-radius: 10px; 
+            margin: 3px 12px; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            transition: 0.2s; 
+            font-size: 0.9rem;
+        }
+        #sidebar .nav-link:hover, #sidebar .nav-link.active { 
+            background-color: #2563eb; 
+            color: #ffffff; 
+        }
+
+        #main-content { margin-left: 260px; transition: all 0.3s ease; min-height: 100vh; display: flex; flex-direction: column; }
+        #main-content.expanded { margin-left: 80px; }
+        .content-body { padding: 30px; flex-grow: 1; }
+        .toast-container { z-index: 2000; }
+    </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR FRAGMENT -->
+<aside th:fragment="sidebar(moduloActivo)" id="sidebar">
+    <div class="px-4 py-4 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-25 flex-shrink-0">
+        <i class="bi bi-hexagon-fill text-primary fs-3"></i>
+        <span class="brand-text fw-bold text-white fs-5 tracking-wide">PG SISTEMA</span>
+    </div>
+
+    <div class="sidebar-nav-container">
+        <ul class="nav flex-column my-2">
+            <li class="nav-item">
+                <a href="/dashboard" class="nav-link" th:classappend="${moduloActivo == 'home' ? 'active' : ''}">
+                    <i class="bi bi-speedometer2 fs-5"></i><span class="sidebar-text">Panel Principal</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasRole('ADMINISTRADOR')">
+                <a href="/usuarios" class="nav-link" th:classappend="${moduloActivo == 'usuarios' ? 'active' : ''}">
+                    <i class="bi bi-people-fill fs-5"></i><span class="sidebar-text">Usuarios y Cuentas</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasRole('SUPERVISOR')">
+                <a href="/trabajadores" class="nav-link" th:classappend="${moduloActivo == 'trabajadores' ? 'active' : ''}">
+                    <i class="bi bi-person-badge fs-5"></i><span class="sidebar-text">Expedientes Personal</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('SUPERVISOR', 'CONTADORA', 'JEFE')">
+                <a href="/asistencias" class="nav-link" th:classappend="${moduloActivo == 'asistencias' ? 'active' : ''}">
+                    <i class="bi bi-calendar-check fs-5"></i><span class="sidebar-text">Control Asistencias</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasRole('CONTADORA')">
+                <a href="/planillas" class="nav-link" th:classappend="${moduloActivo == 'planillas' ? 'active' : ''}">
+                    <i class="bi bi-calculator fs-5"></i><span class="sidebar-text">Nómina y Planillas</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE')">
+                <a href="/clientes" class="nav-link" th:classappend="${moduloActivo == 'clientes' ? 'active' : ''}">
+                    <i class="bi bi-person-lines-fill fs-5"></i><span class="sidebar-text">Clientes</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE')">
+                <a href="/proyectos" class="nav-link" th:classappend="${moduloActivo == 'proyectos' ? 'active' : ''}">
+                    <i class="bi bi-building fs-5"></i><span class="sidebar-text">Obras y Proyectos</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE')">
+                <a href="/cotizaciones" class="nav-link" th:classappend="${moduloActivo == 'cotizaciones' ? 'active' : ''}">
+                    <i class="bi bi-receipt-cutoff fs-5"></i><span class="sidebar-text">Cotizaciones</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasRole('CONTADORA')">
+                <a href="/facturacion/generar" class="nav-link" th:classappend="${moduloActivo == 'facturacion' ? 'active' : ''}">
+                    <i class="bi bi-file-earmark-code fs-5"></i><span class="sidebar-text">Facturación Llama</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'SUPERVISOR', 'CONTADORA', 'JEFE')">
+                <a href="/facturas" class="nav-link" th:classappend="${moduloActivo == 'facturas' ? 'active' : ''}">
+                    <i class="bi bi-camera-fill fs-5"></i><span class="sidebar-text">Gastos de Campo</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE', 'SUPERVISOR')">
+                <a href="/inventario" class="nav-link" th:classappend="${moduloActivo == 'inventario' ? 'active' : ''}">
+                    <i class="bi bi-tools fs-5"></i><span class="sidebar-text">Bodega Herramientas</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE', 'CONTADORA')">
+                <a href="/reportes" class="nav-link" th:classappend="${moduloActivo == 'reportes' ? 'active' : ''}">
+                    <i class="bi bi-bar-chart-fill fs-5"></i><span class="sidebar-text">Informes y Reportes</span>
+                </a>
+            </li>
+
+            <li class="nav-item" sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE')">
+                <a href="/auditoria" class="nav-link" th:classappend="${moduloActivo == 'auditoria' ? 'active' : ''}">
+                    <i class="bi bi-shield-lock-fill fs-5"></i><span class="sidebar-text">Bitácora / Auditoría</span>
+                </a>
+            </li>
+
+            <!-- ENLACE UNIVERSAL AL CENTRO DE AYUDA -->
+            <li class="nav-item">
+                <!--
+                <a href="/ayuda" class="nav-link" th:classappend="${moduloActivo == 'ayuda' ? 'active bg-warning text-dark' : 'text-info'}">
+                    <i class="bi bi-question-diamond-fill fs-5"></i><span class="sidebar-text fw-bold">Centro de Ayuda</span>
+                </a>
+                -->
+            </li>
+        </ul>
+    </div>
+
+    <div class="p-3 border-top border-secondary border-opacity-25 flex-shrink-0 bg-dark">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-outline-danger w-100 rounded-pill btn-sm fw-bold d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="sidebar-text">Cerrar Sesión</span>
+            </button>
+        </form>
+    </div>
+</aside>
+
+<!-- TOPBAR FRAGMENT -->
+<header th:fragment="topbar(titulo)" id="topbar" class="d-flex justify-content-between align-items-center px-4 py-3 bg-white border-bottom shadow-sm">
+    <div class="d-flex align-items-center">
+        <button id="sidebarToggle" class="btn btn-light btn-sm me-3 border-0">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <h5 class="mb-0 fw-bold text-dark" th:text="${titulo}">Panel</h5>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <a href="/ayuda" class="btn btn-light rounded-pill border btn-sm px-3 fw-bold text-primary shadow-sm" title="Consultar manual según mis roles">
+            <i class="bi bi-question-circle-fill me-1"></i>Ayuda
+        </a>
+
+        <div class="dropdown">
+            <button class="btn btn-light rounded-pill px-3 py-2 d-flex align-items-center gap-2 border shadow-sm dropdown-toggle" 
+                    type="button" id="dropdownPerfil" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                     style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="text-start d-none d-md-block">
+                    <span class="d-block fw-bold text-dark small" th:text="${#authentication.name}">Usuario</span>
+                    <span class="d-block text-muted" style="font-size: 0.7rem;" th:text="${#authentication.authorities[0].authority.replace('ROLE_', '')}">ROL</span>
+                </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-2" aria-labelledby="dropdownPerfil" style="min-width: 210px;">
+                <li class="px-3 py-2 border-bottom mb-2">
+                    <span class="d-block fw-bold small text-dark" th:text="${#authentication.name}">Usuario</span>
+                    <small class="text-muted" th:text="${#authentication.authorities[0].authority.replace('ROLE_', '')}">ROL</small>
+                </li>
+                <li>
+                    <a class="dropdown-item rounded-3 py-2 small" href="/dashboard">
+                        <i class="bi bi-speedometer2 me-2 text-primary"></i>Panel Principal
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item rounded-3 py-2 small fw-bold text-info" href="/ayuda">
+                        <i class="bi bi-question-diamond-fill me-2"></i>Manual de Ayuda
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider my-2"></li>
+                <li>
+                    <form th:action="@{/logout}" method="post" class="m-0 p-0">
+                        <button type="submit" class="dropdown-item rounded-3 py-2 small text-danger fw-bold d-flex align-items-center">
+                            <i class="bi bi-box-arrow-right me-2 fs-6"></i>Cerrar Sesión
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<!-- SCRIPTS & TOASTS NOTIFICACIONES AUTOMÁTICAS -->
+<th:block th:fragment="script">
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div th:if="${success}" class="toast align-items-center text-bg-success border-0 shadow-lg show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fw-bold">
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i><span th:text="${success}"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <div th:if="${warning}" class="toast align-items-center text-bg-warning border-0 shadow-lg show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fw-bold text-dark">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i><span th:text="${warning}"></span>
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <div th:if="${error}" class="toast align-items-center text-bg-danger border-0 shadow-lg show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fw-bold">
+                    <i class="bi bi-x-octagon-fill me-2 fs-5"></i><span th:text="${error}"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const toggleBtn = document.getElementById('sidebarToggle');
+
+            if (localStorage.getItem('sidebar-collapsed') === 'true') {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                    localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+                });
+            }
+
+            var dropdowns = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            dropdowns.map(el => new bootstrap.Dropdown(el));
+
+            var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+            toastElList.map(toastEl => {
+                var toast = new bootstrap.Toast(toastEl, { delay: 6000 });
+                toast.show();
+            });
+        });
+    </script>
+</th:block>
+
+</body>
+</html>

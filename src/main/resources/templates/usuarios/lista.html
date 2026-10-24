@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Usuarios')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('usuarios')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Gestión de Usuarios')}"></header>
+        <main class="content-body">
+            
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
+
+            <!-- CONTROLES SUPERIORES Y BUSCADOR -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <form action="/usuarios" method="get" class="flex-grow-1" style="max-width: 500px;">
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white border">
+                        <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" th:value="${q}" class="form-control border-0 bg-white shadow-none" placeholder="Buscar por username o nombre...">
+                        <a th:if="${q != null and q != ''}" href="/usuarios" class="btn btn-white border-0 text-danger d-flex align-items-center" title="Limpiar búsqueda"><i class="bi bi-x-circle-fill"></i></a>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">Buscar</button>
+                    </div>
+                </form>
+
+                <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
+                    <i class="bi bi-person-plus-fill me-2"></i>Nuevo Usuario
+                </button>
+            </div>
+
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Username</th>
+                                <th>Nombre</th>
+                                <th>Roles</th>
+                                <th>Estado</th>
+                                <th class="text-center pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${usuarios}">
+                                <td class="ps-4 fw-bold" th:text="${u.username}"></td>
+                                <td th:text="${u.nombreCompleto}"></td>
+                                <td>
+                                    <span th:each="rol : ${u.roles}" class="badge bg-info-subtle text-info border border-info me-1" th:text="${rol.nombre}"></span>
+                                </td>
+                                <td>
+                                    <span th:if="${u.activo}" class="badge bg-success-subtle text-success">Activo</span>
+                                    <span th:unless="${u.activo}" class="badge bg-danger-subtle text-danger">Inactivo</span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" data-bs-toggle="modal" th:data-bs-target="'#modalEditarUsuario-' + ${u.id}">
+                                        Editar
+                                    </button>
+
+                                    <!-- Modal Editar Usuario -->
+                                    <div class="modal fade text-start" th:id="'modalEditarUsuario-' + ${u.id}" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow">
+                                                <form th:action="@{/usuarios/guardar}" method="post">
+                                                    <input type="hidden" name="id" th:value="${u.id}">
+                                                    <div class="modal-header bg-dark text-white border-0">
+                                                        <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-warning"></i>Editar Usuario</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body p-4">
+                                                        <div class="row g-3 mb-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label fw-bold small text-muted">Username</label>
+                                                                <input type="text" name="username" class="form-control bg-light border-0" th:value="${u.username}" readonly>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label fw-bold small text-muted">Email</label>
+                                                                <input type="email" name="email" class="form-control bg-light border-0" th:value="${u.email}" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold small text-muted">Nombre Completo</label>
+                                                            <input type="text" name="nombreCompleto" class="form-control bg-light border-0" th:value="${u.nombreCompleto}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold small text-muted">Contraseña (Opcional)</label>
+                                                            <input type="password" name="password" class="form-control bg-light border-0" 
+                                                                   placeholder="Dejar en blanco para mantener la actual"
+                                                                   pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!._-]).{8,}$"
+                                                                   title="Mínimo 8 caracteres, con mayúsculas, minúsculas, números y símbolos">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold small text-muted">Roles (Ctrl+Clic para varios)</label>
+                                                            <select name="roles" class="form-select bg-light border-0" multiple required size="3">
+                                                                <option th:each="rol : ${allRoles}" th:value="${rol.id}" th:text="${rol.nombre}" th:selected="${#lists.contains(u.roles, rol)}"></option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-check form-switch mt-3">
+                                                            <input class="form-check-input" type="checkbox" name="activo" th:checked="${u.activo}" th:id="'activo-' + ${u.id}">
+                                                            <input type="hidden" name="_activo" value="on">
+                                                            <label class="form-check-label fw-bold text-primary" th:for="'activo-' + ${u.id}">Usuario Activo</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 bg-light">
+                                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">Guardar Cambios</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(usuarios)}">
+                                <td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-search display-6 d-block mb-2"></i>No se encontraron resultados para "<span th:text="${q}"></span>"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal Crear Usuario (HU-31 Tarea 3: Políticas de Password Seguro) -->
+            <div class="modal fade" id="modalCrearUsuario" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <form th:action="@{/usuarios/guardar}" th:object="${nuevoUsuario}" method="post">
+                            <div class="modal-header bg-primary text-white border-0">
+                                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Nuevo Usuario</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-muted">Username</label>
+                                        <input type="text" th:field="*{username}" class="form-control bg-light border-0" required minlength="4">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-muted">Email</label>
+                                        <input type="email" th:field="*{email}" class="form-control bg-light border-0" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Nombre Completo</label>
+                                    <input type="text" th:field="*{nombreCompleto}" class="form-control bg-light border-0" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Contraseña Segura</label>
+                                    <input type="password" th:field="*{password}" class="form-control bg-light border-0" required
+                                           pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!._-]).{8,}$"
+                                           placeholder="Mínimo 8 caracteres (A-Z, 0-9, @#$)">
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-shield-check text-primary me-1"></i>Debe incluir mayúscula, minúscula, número y un símbolo (@#$%^&+=!._-).
+                                    </small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Roles (Ctrl+Clic para varios)</label>
+                                    <select th:field="*{roles}" class="form-select bg-light border-0" multiple required size="3">
+                                        <option th:each="rol : ${allRoles}" th:value="${rol.id}" th:text="${rol.nombre}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 bg-light">
+                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">Guardar Usuario</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+</body>
+</html>

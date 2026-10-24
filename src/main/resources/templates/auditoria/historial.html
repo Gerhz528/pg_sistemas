@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Auditoría y Bitácora')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('auditoria')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Auditoría de Actividades')}"></header>
+        <main class="content-body" style="background-color: #f8fafc;">
+
+            <!-- FILTRO DE AUDITORÍA -->
+            <div class="card border-0 shadow-sm p-4 mb-4 bg-white rounded-4">
+                <form th:action="@{/auditoria}" method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Usuario</label>
+                        <input type="text" name="usuario" class="form-control bg-light border-0" 
+                               placeholder="Ej: admin, supervisor..." th:value="${usuario}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold small text-muted">Módulo del Sistema</label>
+                        <select name="modulo" class="form-select bg-light border-0">
+                            <option value="">-- Todos los Módulos --</option>
+                            <option value="SEGURIDAD" th:selected="${modulo == 'SEGURIDAD'}">Seguridad / Inicios de Sesión</option>
+                            <option value="ASISTENCIAS" th:selected="${modulo == 'ASISTENCIAS'}">Asistencias / Jornadas</option>
+                            <option value="PLANILLAS" th:selected="${modulo == 'PLANILLAS'}">Planillas / Nómina</option>
+                            <option value="COTIZACIONES" th:selected="${modulo == 'COTIZACIONES'}">Cotizaciones</option>
+                            <option value="INVENTARIO" th:selected="${modulo == 'INVENTARIO'}">Inventario / Bodega</option>
+                            <option value="FACTURAS" th:selected="${modulo == 'FACTURAS'}">Facturas y Gastos</option>
+                            <option value="PROYECTOS" th:selected="${modulo == 'PROYECTOS'}">Proyectos / Cronograma</option>
+                            <option value="TRABAJADORES" th:selected="${modulo == 'TRABAJADORES'}">Trabajadores / Personal</option>
+                            <option value="CLIENTES" th:selected="${modulo == 'CLIENTES'}">Directorio de Clientes</option>
+                            <option value="USUARIOS" th:selected="${modulo == 'USUARIOS'}">Usuarios del Sistema</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-muted">Desde</label>
+                        <input type="date" name="inicio" class="form-control bg-light border-0" th:value="${inicio}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-muted">Hasta</label>
+                        <input type="date" name="fin" class="form-control bg-light border-0" th:value="${fin}">
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <a th:href="@{/auditoria}" class="btn btn-light rounded-pill w-50" title="Limpiar"><i class="bi bi-x-circle"></i></a>
+                        <button type="submit" class="btn btn-primary rounded-pill w-100 fw-bold shadow-sm">
+                            <i class="bi bi-funnel-fill me-1"></i>Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- REGISTRO TIPO TIMELINE / TABLA -->
+            <div class="card border-0 shadow-sm bg-white rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-clock-history text-primary me-2"></i>Trazabilidad de Cambios</h5>
+                        <small class="text-muted">Registro de transacciones con captura de dirección IP, usuario y rol</small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill px-3 py-2 fw-semibold" th:text="${logs.size()} + ' Registros'"></span>
+                </div>
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Fecha y Hora</th>
+                                <th>Usuario / Rol</th>
+                                <th>Módulo</th>
+                                <th>Tipo de Acción</th>
+                                <th>Descripción de la Operación</th>
+                                <th class="text-end pe-4">Dirección IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="l : ${logs}">
+                                <td class="ps-4 font-monospace text-muted small">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    <span th:text="${#temporals.format(l.fechaHora, 'dd/MM/yyyy HH:mm:ss')}"></span>
+                                </td>
+                                <td>
+                                    <strong class="text-dark d-block" th:text="${l.usuario}"></strong>
+                                    <small class="text-primary font-monospace" style="font-size: 0.75rem;" th:text="${l.rol}"></small>
+                                </td>
+                                <td>
+                                    <span th:if="${l.modulo == 'SEGURIDAD'}" class="badge bg-info text-dark rounded-pill px-3 fw-bold">SEGURIDAD</span>
+                                    <span th:if="${l.modulo != 'SEGURIDAD'}" class="badge bg-light text-dark border px-3" th:text="${l.modulo}"></span>
+                                </td>
+                                <td>
+                                    <!-- Badges Semánticos según la acción -->
+                                    <span th:if="${l.accion == 'INICIO_SESION'}" 
+                                          class="badge bg-primary text-white rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                                    </span>
+                                    <span th:if="${l.accion == 'REGISTRO_MASIVO' or l.accion == 'REGISTRO_INDIVIDUAL' or l.accion == 'IMPORTACION_EXCEL'}" 
+                                          class="badge bg-success text-white rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-calendar-check me-1"></i>Asistencia
+                                    </span>
+                                    <span th:if="${l.accion == 'HORAS_EXTRA'}" 
+                                          class="badge bg-dark text-white rounded-pill px-3">
+                                        <i class="bi bi-stopwatch-fill me-1"></i>Horas Extra
+                                    </span>
+                                    <span th:if="${l.accion == 'CIERRE_PERIODO' or l.accion == 'CIERRE_DIA'}" 
+                                          class="badge bg-warning text-dark rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-lock-fill me-1"></i>Cierre
+                                    </span>
+                                    <span th:if="${l.accion == 'CREACION' or l.accion == 'REGISTRO' or l.accion == 'GASTO_CAMPO' or l.accion == 'EXPEDIENTE'}" 
+                                          class="badge bg-success-subtle text-success border border-success rounded-pill px-3">
+                                        <i class="bi bi-plus-circle-fill me-1"></i>Alta
+                                    </span>
+                                    <span th:if="${l.accion == 'MODIFICACION' or l.accion == 'CRONOGRAMA' or l.accion == 'PROYECTO' or l.accion == 'CATALOGO' or l.accion == 'PUESTOS' or l.accion == 'GESTION_CUENTA'}" 
+                                          class="badge bg-info-subtle text-info border border-info rounded-pill px-3">
+                                        <i class="bi bi-pencil-fill me-1"></i>Edición
+                                    </span>
+                                    <span th:if="${l.accion == 'MOVIMIENTO'}" 
+                                          class="badge bg-dark rounded-pill px-3">
+                                        <i class="bi bi-arrow-left-right me-1"></i>Movimiento
+                                    </span>
+                                    <span th:if="${l.accion == 'REVISION'}" 
+                                          class="badge bg-primary-subtle text-primary border border-primary rounded-pill px-3">
+                                        <i class="bi bi-shield-check me-1"></i>Auditoría
+                                    </span>
+                                    <span th:if="${l.accion == 'ASIGNACION_BONO'}" 
+                                          class="badge bg-success text-white rounded-pill px-3">
+                                        <i class="bi bi-cash-coin me-1"></i>Bono
+                                    </span>
+                                </td>
+                                <td class="text-dark" th:text="${l.descripcion}"></td>
+                                <td class="text-end pe-4 font-monospace text-muted small">
+                                    <i class="bi bi-globe me-1"></i><span th:text="${l.direccionIp}"></span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(logs)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-journal-x display-5 d-block mb-2 opacity-50"></i>
+                                    No se registraron actividades para los criterios de búsqueda especificados.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script th:replace="~{fragments/layout :: script}"></script>
+</body>
+</html>

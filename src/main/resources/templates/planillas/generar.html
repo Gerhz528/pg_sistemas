@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Generar Planilla')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('planillas')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Cierre de Planilla')}"></header>
+        <main class="content-body">
+
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span>
+            </div>
+
+            <div class="d-flex justify-content-end mb-3">
+                <a href="/planillas/historial" class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-clock-history me-2"></i>Ver Historial de Planillas
+                </a>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-md-7">
+                    <div class="card border-0 shadow-sm p-4 p-md-5 text-center">
+                        <i class="bi bi-calculator display-1 text-primary mb-3"></i>
+                        <h3 class="fw-bold mb-4">Generador de Planillas</h3>
+                        
+                        <!-- Pestañas de Modo -->
+                        <ul class="nav nav-pills nav-fill bg-light p-1 rounded-pill mb-4" id="modoPlanilla">
+                            <li class="nav-item">
+                                <button class="nav-link active fw-bold rounded-pill" data-mode="quincenal">Quincenal</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link fw-bold text-dark rounded-pill" data-mode="mensual">Mensual</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link fw-bold text-dark rounded-pill" data-mode="personalizado">Personalizado</button>
+                            </li>
+                        </ul>
+
+                        <!-- Formularios Dinámicos -->
+                        <div id="ui-quincenal" class="row g-3 mb-4 text-start">
+                            <div class="col-6">
+                                <label class="fw-bold small text-muted mb-1">Seleccione el Mes</label>
+                                <input type="month" id="q-mes" class="form-control bg-light border-0 fw-bold py-2" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="fw-bold small text-muted mb-1">Período</label>
+                                <select id="q-tipo" class="form-select bg-light border-0 fw-bold py-2">
+                                    <option value="1">1ra Quincena (Día 1 al 15)</option>
+                                    <option value="2">2da Quincena (Día 16 al Fin de Mes)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="ui-mensual" class="row g-3 mb-4 text-start d-none justify-content-center">
+                            <div class="col-8">
+                                <label class="fw-bold small text-muted mb-1">Seleccione el Mes a Pagar</label>
+                                <input type="month" id="m-mes" class="form-control bg-light border-0 fw-bold py-2">
+                            </div>
+                        </div>
+
+                        <div id="ui-personalizado" class="row g-3 mb-4 text-start d-none">
+                            <div class="col-6">
+                                <label class="fw-bold small text-muted mb-1">Desde</label>
+                                <input type="date" id="p-inicio" class="form-control bg-light border-0 py-2">
+                            </div>
+                            <div class="col-6">
+                                <label class="fw-bold small text-muted mb-1">Hasta</label>
+                                <input type="date" id="p-fin" class="form-control bg-light border-0 py-2">
+                            </div>
+                        </div>
+
+                        <!-- Formulario Oculto que viaja al Backend -->
+                        <form id="formPlanilla" th:action="@{/planillas/generar}" method="post">
+                            <input type="hidden" name="inicio" id="hiddenInicio">
+                            <input type="hidden" name="fin" id="hiddenFin">
+
+                            <div id="loadingSection" class="d-none text-center mb-4 mt-3">
+                                <h6 class="fw-bold text-primary mb-2 small">Calculando bonos, horas y extras...</h6>
+                                <div class="progress" style="height: 8px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="btnGenerar" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm mt-2">
+                                <i class="bi bi-cpu-fill me-2"></i> Procesar Nómina
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script th:replace="~{fragments/layout :: script}"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Setear el mes actual por defecto
+            const hoy = new Date();
+            const yearMonth = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+            document.getElementById('q-mes').value = yearMonth;
+            document.getElementById('m-mes').value = yearMonth;
+
+            // Manejo de Pestañas
+            let modoActual = 'quincenal';
+            const tabs = document.querySelectorAll('#modoPlanilla button');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Cambiar estilos activos
+                    tabs.forEach(t => { t.classList.remove('active', 'text-white'); t.classList.add('text-dark'); });
+                    this.classList.add('active', 'text-white');
+                    this.classList.remove('text-dark');
+                    
+                    // Ocultar todas las UIs
+                    document.getElementById('ui-quincenal').classList.add('d-none');
+                    document.getElementById('ui-mensual').classList.add('d-none');
+                    document.getElementById('ui-personalizado').classList.add('d-none');
+                    
+                    // Mostrar la correcta
+                    modoActual = this.getAttribute('data-mode');
+                    document.getElementById('ui-' + modoActual).classList.remove('d-none');
+                });
+            });
+
+            // Lógica al presionar Procesar Nómina
+            document.getElementById('btnGenerar').addEventListener('click', function() {
+                let fechaInicio, fechaFin;
+
+                if (modoActual === 'quincenal') {
+                    const mesVal = document.getElementById('q-mes').value; // Ej: "2026-07"
+                    if (!mesVal) return alert('Seleccione un mes');
+                    const [y, m] = mesVal.split('-');
+                    const tipo = document.getElementById('q-tipo').value;
+                    
+                    if (tipo === '1') {
+                        fechaInicio = `${y}-${m}-01`;
+                        fechaFin = `${y}-${m}-15`;
+                    } else {
+                        fechaInicio = `${y}-${m}-16`;
+                        const ultimoDia = new Date(y, m, 0).getDate(); // Truco JS para saber los días del mes
+                        fechaFin = `${y}-${m}-${ultimoDia}`;
+                    }
+                } 
+                else if (modoActual === 'mensual') {
+                    const mesVal = document.getElementById('m-mes').value;
+                    if (!mesVal) return alert('Seleccione un mes');
+                    const [y, m] = mesVal.split('-');
+                    const ultimoDia = new Date(y, m, 0).getDate();
+                    fechaInicio = `${y}-${m}-01`;
+                    fechaFin = `${y}-${m}-${ultimoDia}`;
+                } 
+                else if (modoActual === 'personalizado') {
+                    fechaInicio = document.getElementById('p-inicio').value;
+                    fechaFin = document.getElementById('p-fin').value;
+                    if (!fechaInicio || !fechaFin) return alert('Seleccione ambas fechas');
+                }
+
+                // Inyectar en los hiddens
+                document.getElementById('hiddenInicio').value = fechaInicio;
+                document.getElementById('hiddenFin').value = fechaFin;
+
+                // Animación de Carga
+                document.getElementById('loadingSection').classList.remove('d-none');
+                this.classList.add('disabled');
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Calculando...';
+
+                let width = 0;
+                const pBar = document.getElementById('progressBar');
+                const interval = setInterval(() => {
+                    width += 15;
+                    pBar.style.width = width + '%';
+                    if(width >= 100) {
+                        clearInterval(interval);
+                        document.getElementById('formPlanilla').submit(); 
+                    }
+                }, 150); 
+            });
+        });
+    </script>
+</body>
+</html>

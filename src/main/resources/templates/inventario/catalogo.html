@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Inventario de Herramientas')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('inventario')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Control de Bodega')}"></header>
+        <main class="content-body">
+            
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
+
+            <!-- CONTROLES Y BUSCADOR -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <form action="/inventario" method="get" class="flex-grow-1" style="max-width: 500px;">
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white border">
+                        <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" th:value="${q}" class="form-control border-0 bg-white shadow-none" placeholder="Buscar por código o nombre...">
+                        <a th:if="${q != null and q != ''}" href="/inventario" class="btn btn-white border-0 text-danger"><i class="bi bi-x-circle-fill"></i></a>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">Buscar</button>
+                    </div>
+                </form>
+
+                <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearHerramienta">
+                    <i class="bi bi-tools me-2"></i>Registrar Equipo
+                </button>
+            </div>
+
+            <!-- CATÁLOGO DE HERRAMIENTAS (HU-24) -->
+            <div class="row g-4">
+                <div class="col-sm-6 col-lg-4 col-xl-3" th:each="h : ${herramientas}">
+                    <div class="card h-100 border-0 shadow-sm overflow-hidden" th:classappend="${h.stock <= h.stockMinimo and h.stock > 0 ? 'border-warning border-3' : (h.stock == 0 ? 'border-danger border-3 opacity-75' : '')}">
+                        
+                        <!-- ETIQUETA VISUAL DE ESTADO -->
+                        <div class="position-absolute top-0 end-0 m-3 z-3">
+                            <span th:if="${h.stock > h.stockMinimo}" class="badge bg-success rounded-pill shadow-sm"><i class="bi bi-check-circle-fill me-1"></i>Disponible</span>
+                            <span th:if="${h.stock <= h.stockMinimo and h.stock > 0}" class="badge bg-warning text-dark rounded-pill shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stock Bajo</span>
+                            <span th:if="${h.stock == 0}" class="badge bg-danger rounded-pill shadow-sm"><i class="bi bi-x-circle-fill me-1"></i>Agotado</span>
+                        </div>
+
+                        <!-- FOTO -->
+                        <div style="height: 200px; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+                            <img th:if="${h.imagen != null}" th:src="@{'/uploads/' + ${h.imagen}}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <i th:unless="${h.imagen != null}" class="bi bi-wrench-adjustable text-secondary opacity-50" style="font-size: 5rem;"></i>
+                            
+                            <!-- INFO FLOTANTE SOBRE FOTO -->
+                            <div class="position-absolute bottom-0 start-0 w-100 p-2 bg-dark bg-opacity-75 text-white d-flex justify-content-between align-items-center" style="backdrop-filter: blur(5px);">
+                                <small class="font-monospace fw-bold"><i class="bi bi-upc-scan me-1"></i>[[${h.codigo}]]</small>
+                                <span class="badge bg-light text-dark fw-bold border">Cant: [[${h.stock}]]</span>
+                            </div>
+                        </div>
+
+                        <!-- INFO -->
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark mb-1" th:text="${h.nombre}"></h5>
+                            <p class="text-primary small fw-bold text-uppercase mb-3"><i class="bi bi-tag-fill me-1"></i>[[${h.marca != null and h.marca != '' ? h.marca : 'Genérica'}]]</p>
+                            
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span><i class="bi bi-info-circle me-1"></i>Condición: <strong th:text="${h.condicion}"></strong></span>
+                                <span>Min: <strong th:text="${h.stockMinimo}"></strong></span>
+                            </div>
+                        </div>
+
+                        <!-- BOTONES -->
+                        <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <!-- Botón Editar oculto (Tuerca) -->
+                                <button sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE')" type="button" class="btn btn-link text-muted p-0"
+                                        data-bs-toggle="modal" th:data-bs-target="'#modalEditarHerramienta-' + ${h.id}" title="Ajustes de Herramienta">
+                                    <i class="bi bi-gear-fill"></i> Editar Ficha
+                                </button>
+                                
+                                <!-- Botón Historial -->
+                                <a th:href="@{/inventario/historial/{id}(id=${h.id})}" class="btn btn-link text-primary p-0 fw-bold text-decoration-none">
+                                    Kardex <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-2">
+                                <!-- Botón Movimiento (Resta o Suma Stock) -->
+                                <button type="button" class="btn btn-dark w-100 fw-bold shadow-sm" style="font-size: 0.85rem;" 
+                                        data-bs-toggle="modal" th:data-bs-target="'#modalMovimiento-' + ${h.id}">
+                                    <i class="bi bi-arrow-left-right me-1"></i>Registrar Asignación
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- MODAL: MOVIMIENTO DE INVENTARIO (HU-25) -->
+                        <div class="modal fade text-start" th:id="'modalMovimiento-' + ${h.id}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow">
+                                    <form th:action="@{/inventario/movimiento}" th:object="${nuevoMovimiento}" method="post">
+                                        <input type="hidden" name="herramienta.id" th:value="${h.id}">
+                                        
+                                        <div class="modal-header bg-dark text-white border-0">
+                                            <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right me-2"></i>Registrar Movimiento</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body p-4 bg-light">
+                                            <div class="d-flex align-items-center mb-4 p-3 bg-white rounded border shadow-sm">
+                                                <i class="bi bi-tools fs-3 text-primary me-3"></i>
+                                                <div>
+                                                    <h6 class="fw-bold mb-0 text-dark" th:text="${h.nombre}"></h6>
+                                                    <small class="text-muted font-monospace" th:text="'ID: ' + ${h.codigo} + ' | Stock actual: ' + ${h.stock}"></small>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <label class="form-label fw-bold text-muted small">Tipo de Acción</label>
+                                                <div class="d-flex gap-3">
+                                                    <div class="form-check border rounded-3 p-3 flex-fill bg-white">
+                                                        <input class="form-check-input float-none ms-0 mb-2" type="radio" name="tipo" th:id="'tipoAsig-' + ${h.id}" value="ASIGNACION" checked>
+                                                        <label class="form-check-label fw-bold text-danger d-block small" th:for="'tipoAsig-' + ${h.id}"><i class="bi bi-box-arrow-up-right me-1"></i> Asignar (Salida)</label>
+                                                    </div>
+                                                    <div class="form-check border rounded-3 p-3 flex-fill bg-white">
+                                                        <input class="form-check-input float-none ms-0 mb-2" type="radio" name="tipo" th:id="'tipoDev-' + ${h.id}" value="DEVOLUCION">
+                                                        <label class="form-check-label fw-bold text-success d-block small" th:for="'tipoDev-' + ${h.id}"><i class="bi bi-box-arrow-in-down-left me-1"></i> Devolver (Entrada)</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold text-muted small">Cantidad a Mover</label>
+                                                    <input type="number" name="cantidad" class="form-control fw-bold border-0 shadow-sm" min="1" value="1" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold text-muted small">Fecha</label>
+                                                    <input type="date" name="fecha" class="form-control border-0 shadow-sm text-muted" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold text-muted small">Proyecto de Destino / Origen</label>
+                                                <select name="proyecto.id" class="form-select border-0 shadow-sm" required>
+                                                    <option value="">-- Seleccione Proyecto --</option>
+                                                    <option th:each="p : ${proyectos}" th:value="${p.id}" th:text="${p.nombre}"></option>
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label fw-bold text-muted small">Responsable (A quién se entrega/recibe)</label>
+                                                <input type="text" name="responsable" class="form-control border-0 shadow-sm" placeholder="Ej: Maestro de obra Juan" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-0 bg-white">
+                                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">Confirmar Acción</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODAL: EDITAR HERRAMIENTA -->
+                        <div sec:authorize="hasAnyRole('ADMINISTRADOR', 'JEFE')" class="modal fade text-start" th:id="'modalEditarHerramienta-' + ${h.id}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow">
+                                    <form th:action="@{/inventario/guardar}" method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="id" th:value="${h.id}">
+                                        <input type="hidden" name="imagen" th:value="${h.imagen}">
+                                        
+                                        <div class="modal-header bg-warning border-0">
+                                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Editar Herramienta</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body p-4">
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-8">
+                                                    <label class="form-label fw-bold small text-muted">Nombre del Equipo</label>
+                                                    <input type="text" name="nombre" class="form-control bg-light border-0 fw-bold" th:value="${h.nombre}" required>
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold small text-muted">Código</label>
+                                                    <input type="text" name="codigo" class="form-control bg-white border-0 text-muted font-monospace" th:value="${h.codigo}" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label fw-bold small text-muted">Marca</label>
+                                                    <input type="text" name="marca" class="form-control bg-light border-0" th:value="${h.marca}">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label fw-bold small text-muted">Condición Actual</label>
+                                                    <select name="condicion" class="form-select bg-light border-0">
+                                                        <option value="Nuevo" th:selected="${h.condicion == 'Nuevo'}">Nuevo</option>
+                                                        <option value="Usado - Bueno" th:selected="${h.condicion == 'Usado - Bueno'}">Usado - Bueno</option>
+                                                        <option value="Requiere Mantenimiento" th:selected="${h.condicion == 'Requiere Mantenimiento'}">Requiere Mantenimiento</option>
+                                                        <option value="Dañado" th:selected="${h.condicion == 'Dañado'}">Dañado</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-6">
+                                                    <label class="form-label fw-bold small text-muted">Stock Total (Bodega)</label>
+                                                    <input type="number" name="stock" class="form-control bg-light border-0 fw-bold text-success" th:value="${h.stock}" min="0" required>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label fw-bold small text-muted">Stock Mínimo (Alerta)</label>
+                                                    <input type="number" name="stockMinimo" class="form-control bg-light border-0 text-warning" th:value="${h.stockMinimo}" min="0" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label fw-bold small text-muted">Actualizar Foto (Dejar vacío para mantener actual)</label>
+                                                <input type="file" name="fileFoto" class="form-control form-control-sm bg-light border-0" accept="image/*">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-0 bg-light">
+                                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">Actualizar Datos</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MENSAJE VACÍO -->
+                <div th:if="${#lists.isEmpty(herramientas)}" class="col-12 text-center py-5 text-muted">
+                    <i class="bi bi-tools display-6 d-block mb-3 opacity-50"></i>
+                    <h5 th:if="${q == null}">La bodega de herramientas está vacía.</h5>
+                    <h5 th:if="${q != null}">No se encontró ninguna herramienta llamada "<span th:text="${q}"></span>".</h5>
+                </div>
+            </div>
+
+            <!-- MODAL: CREAR HERRAMIENTA -->
+            <div class="modal fade" id="modalCrearHerramienta" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content border-0 shadow">
+                        <form th:action="@{/inventario/guardar}" th:object="${nuevaHerramienta}" method="post" enctype="multipart/form-data">
+                            <div class="modal-header bg-success text-white border-0">
+                                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle-fill me-2"></i>Registrar Nuevo Equipo</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold small text-muted">Nombre de la Herramienta / Equipo</label>
+                                        <input type="text" th:field="*{nombre}" class="form-control bg-light border-0" placeholder="Ej: Rotomartillo SDS Max" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold small text-muted">Código Único (Etiqueta)</label>
+                                        <input type="text" th:field="*{codigo}" class="form-control bg-light border-0 text-uppercase font-monospace" placeholder="HTA-001" required>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-muted">Marca (Opcional)</label>
+                                        <input type="text" th:field="*{marca}" class="form-control bg-light border-0" placeholder="Ej: Makita, DeWalt">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-muted">Condición Inicial</label>
+                                        <select th:field="*{condicion}" class="form-select bg-light border-0">
+                                            <option value="Nuevo">Nuevo</option>
+                                            <option value="Usado - Bueno">Usado - Bueno</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-muted">Stock Inicial (Cantidad ingresada a Bodega)</label>
+                                        <input type="number" th:field="*{stock}" class="form-control bg-light border-0 fw-bold text-success" min="0" value="1" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-muted">Stock Mínimo (Lanzará alerta si baja de esto)</label>
+                                        <input type="number" th:field="*{stockMinimo}" class="form-control bg-light border-0 text-warning" min="0" value="0" required>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label fw-bold small text-muted">Fotografía de Referencia (JPG/PNG)</label>
+                                    <input type="file" name="fileFoto" class="form-control form-control-sm bg-light border-0" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 bg-light">
+                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Guardar Equipo</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Detalle de Asistencia')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('asistencias')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Historial de Personal')}"></header>
+        <main class="content-body">
+            
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
+
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="card text-center p-4 mb-4 shadow-sm border-0">
+                        <div class="mx-auto mb-3" style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 3px solid #e2e8f0;">
+                            <img th:if="${trabajador.foto != null}" th:src="@{'/uploads/' + ${trabajador.foto}}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div th:unless="${trabajador.foto != null}" class="bg-light d-flex align-items-center justify-content-center h-100 w-100">
+                                <i class="bi bi-person-fill text-secondary fs-1"></i>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1" th:text="${trabajador.nombre}"></h5>
+                        <p class="text-primary small fw-bold text-uppercase" th:text="${trabajador.puesto != null ? trabajador.puesto.nombre : 'SIN CARGO ASIGNADO'}"></p>
+                        <div class="bg-light p-2 rounded-3 mb-4 small fw-bold">DUI: <span th:text="${trabajador.dui}"></span></div>
+                        
+                        <div class="text-start">
+                            <div class="stat-box bg-primary text-white shadow-sm mb-2"><small class="opacity-75">Horas Base</small><h4 class="mb-0 fw-bold" th:text="${totalBaseGlobal}"></h4></div>
+                            <div class="stat-box bg-success text-white shadow-sm mb-2"><small class="opacity-75">Diurnas</small><h4 class="mb-0 fw-bold" th:text="${totalDiurnaGlobal}"></h4></div>
+                            <div class="stat-box bg-dark text-white shadow-sm mb-2"><small class="opacity-75">Nocturnas</small><h4 class="mb-0 fw-bold" th:text="${totalNocturnaGlobal}"></h4></div>
+                            <!-- NUEVA CAJA DE BONOS -->
+                            <div class="stat-box bg-info text-dark shadow-sm"><small class="opacity-75">Bonos Recibidos</small><h4 class="mb-0 fw-bold" th:text="'$' + ${totalBonosGlobal}"></h4></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-9">
+                    <div th:each="entrada : ${jornadasPorMes}" class="mb-5">
+                        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-calendar3 me-2"></i> <span th:text="${entrada.key}"></span></h6>
+                        <div class="card shadow-sm border-0 overflow-hidden rounded-4">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light"><tr><th class="ps-4">Fecha</th><th>Estado</th><th>Base</th><th>Diurnas</th><th>Nocturnas</th><th class="text-end pe-4">Acciones</th></tr></thead>
+                                <tbody>
+                                    <tr th:each="h : ${entrada.value}">
+                                        <td class="ps-4 fw-bold" th:text="${#temporals.format(h.fecha, 'dd/MM/yyyy')}"></td>
+                                        <td><span th:text="${h.estado}" class="badge" th:classappend="${h.estado == 'APROBADO' ? 'bg-success' : (h.estado == 'RECHAZADO' ? 'bg-danger' : 'bg-warning')}"></span></td>
+                                        <td th:text="${h.horasTotales} + 'h'"></td>
+                                        <td><div th:if="${h.getHorasDiurnasTotales() > 0}"><span class="text-success fw-bold" th:text="'+' + ${#numbers.formatDecimal(h.getHorasDiurnasTotales(), 1, 2)}"></span><i class="bi bi-info-circle text-muted ms-1" style="cursor:help" th:title="${#strings.listJoin(h.horasExtras.?[tipo == 'DIURNA'].![motivo], ' | ')}"></i></div></td>
+                                        <td><div th:if="${h.getHorasNocturnasTotales() > 0}"><span class="text-dark fw-bold" th:text="'+' + ${#numbers.formatDecimal(h.getHorasNocturnasTotales(), 1, 2)}"></span><i class="bi bi-info-circle text-muted ms-1" style="cursor:help" th:title="${#strings.listJoin(h.horasExtras.?[tipo == 'NOCTURNA'].![motivo], ' | ')}"></i></div></td>
+                                        
+                                        <td class="text-end pe-4">
+                                            <div class="btn-group shadow-sm" th:if="${h.estado == 'PENDIENTE'}">
+                                                <button sec:authorize="hasRole('JEFE')" class="btn btn-sm btn-dark px-3 rounded-pill me-1" data-bs-toggle="modal" th:data-bs-target="'#modalRevision' + ${h.id}">Validar</button>
+                                                <button sec:authorize="hasRole('SUPERVISOR')" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" th:data-bs-target="'#modalExtra' + ${h.id}">+ Extra</button>
+                                            </div>
+
+                                            <div sec:authorize="hasRole('JEFE')" class="modal fade text-start" th:id="'modalRevision' + ${h.id}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><form th:action="@{/asistencias/revisar}" method="post"><input type="hidden" name="id" th:value="${h.id}"><div class="modal-header bg-dark text-white border-0"><h5 class="modal-title fw-bold">Validar Registro</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><div class="mb-3"><label class="form-label fw-bold">Observaciones</label><textarea name="observaciones" class="form-control" rows="2"></textarea></div><div class="d-grid gap-2"><button type="submit" name="accion" value="APROBAR" class="btn btn-success fw-bold">Aprobar</button><button type="submit" name="accion" value="RECHAZAR" class="btn btn-outline-danger fw-bold">Rechazar</button></div></div></form></div></div></div>
+                                            <div sec:authorize="hasRole('SUPERVISOR')" class="modal fade text-start" th:id="'modalExtra' + ${h.id}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg"><form th:action="@{/asistencias/horas-extra/guardar}" method="post"><input type="hidden" name="asistencia.id" th:value="${h.id}"><div class="modal-header bg-success text-white border-0"><h5 class="modal-title fw-bold">Nueva Hora Extra</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><div class="mb-3"><label class="form-label fw-bold">Cantidad</label><input type="number" step="0.5" name="cantidad" class="form-control" required></div><div class="mb-3"><label class="form-label fw-bold">Tipo</label><select name="tipo" class="form-select"><option value="DIURNA">Diurna</option><option value="NOCTURNA">Nocturna</option></select></div><div class="mb-1"><label class="form-label fw-bold">Motivo</label><textarea name="motivo" class="form-control" rows="2" required></textarea></div></div><div class="modal-footer border-0 bg-light"><button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">Guardar</button></div></form></div></div></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-group-divider bg-light bg-opacity-50 fw-bold">
+                                    <tr><td colspan="2" class="text-end py-3 ps-4 text-muted small">TOTAL MENSUAL APROBADO:</td><td class="py-3 text-primary" th:text="${#numbers.formatDecimal(#aggregates.sum(entrada.value.![getHorasBaseSiAprobado()]), 1, 2)}"></td><td class="py-3 text-success" th:text="${#numbers.formatDecimal(#aggregates.sum(entrada.value.![getHorasDiurnasAprobadas()]), 1, 2)}"></td><td class="py-3 text-dark" th:text="${#numbers.formatDecimal(#aggregates.sum(entrada.value.![getHorasNocturnasAprobadas()]), 1, 2)}"></td><td></td></tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

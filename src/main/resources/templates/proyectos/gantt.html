@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard del Proyecto')}"></head>
+<body>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
+
+    <aside th:replace="~{fragments/layout :: sidebar('proyectos')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Dashboard de Obra')}"></header>
+        <main class="content-body" style="background-color: #f1f5f9;">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold mb-0 text-dark" th:text="${proyecto.nombre}"></h4>
+                    <p class="text-muted mb-0 small"><i class="bi bi-person-vcard me-1"></i>Cliente: [[${proyecto.cliente.nombre}]]</p>
+                    <p class="text-muted mb-0 small"><i class="bi bi-calendar-range me-1"></i>[[${#temporals.format(proyecto.fechaInicio, 'dd/MM/yyyy')}]] - [[${proyecto.fechaFin != null ? #temporals.format(proyecto.fechaFin, 'dd/MM/yyyy') : 'Sin definir'}]]</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <form th:if="${#lists.isEmpty(tareas)}" th:action="@{'/proyectos/' + ${proyecto.id} + '/gantt/autogenerar'}" method="post">
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 shadow-lg fw-bold text-dark border-0">
+                            <i class="bi bi-magic me-2"></i>Asistente IA: Generar Etapas
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
+
+            <!-- FILA SUPERIOR: GANTT Y FORMULARIO -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-bar-chart-steps me-2"></i>Línea de Tiempo (Gantt)</h6>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gantt.change_view_mode('Day')">Días</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary active" onclick="gantt.change_view_mode('Week')">Semanas</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gantt.change_view_mode('Month')">Meses</button>
+                            </div>
+                        </div>
+                        <div class="card-body overflow-auto p-0 bg-white" style="min-height: 400px;">
+                            <svg id="gantt"></svg>
+                            <div th:if="${#lists.isEmpty(tareas)}" class="text-center py-5 text-muted">
+                                <i class="bi bi-calendar2-x display-1 opacity-25 d-block mb-3"></i>
+                                <h5>El cronograma está vacío.</h5>
+                                <p>Presiona el botón amarillo del "Asistente IA" para autogenerar<br>las etapas, o crea la primera tarea a la derecha.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm mb-4" th:if="${not #lists.isEmpty(tareas)}">
+                        <div class="card-header bg-dark text-white p-3 border-0">
+                            <h6 class="fw-bold mb-0"><i class="bi bi-bell-fill text-warning me-2"></i>Alertas de Actividad</h6>
+                        </div>
+                        <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3" th:each="t : ${tareas}">
+                                    <div class="text-truncate pe-2">
+                                        <span class="fw-bold text-dark d-block" th:text="${t.nombre}"></span>
+                                        <small class="text-muted" th:text="${t.progreso} + '% completado'"></small>
+                                    </div>
+                                    <span th:if="${t.progreso == 100}" class="badge bg-success rounded-pill p-2">Terminada</span>
+                                    <span th:if="${t.progreso < 100 and t.getDiasFaltantes() < 0}" class="badge bg-danger rounded-pill p-2" th:text="'Atrasada ' + ${t.getDiasFaltantes() * -1} + ' d'"></span>
+                                    <span th:if="${t.progreso < 100 and t.getDiasFaltantes() >= 0 and t.getDiasFaltantes() <= 5}" class="badge bg-warning text-dark rounded-pill p-2" th:text="'Faltan ' + ${t.getDiasFaltantes()} + ' d'"></span>
+                                    <span th:if="${t.progreso < 100 and t.getDiasFaltantes() > 5}" class="badge bg-primary rounded-pill p-2" th:text="'En ' + ${t.getDiasFaltantes()} + ' d'"></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white p-3 border-0 d-flex justify-content-between">
+                            <h6 class="fw-bold mb-0" id="formTitle"><i class="bi bi-plus-circle me-2"></i>Nueva Tarea</h6>
+                            <button type="button" class="btn btn-sm btn-light py-0 px-2 d-none" id="btnLimpiar" onclick="limpiarFormulario()"><i class="bi bi-x"></i> Cancelar</button>
+                        </div>
+                        <div class="card-body p-4 bg-white">
+                            <form th:action="@{/proyectos/tareas/guardar}" method="post" id="tareaForm">
+                                <input type="hidden" name="id" id="t-id">
+                                <input type="hidden" name="proyecto.id" th:value="${proyecto.id}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Nombre de la Actividad</label>
+                                    <input type="text" name="nombre" id="t-nombre" class="form-control bg-light border-0 fw-bold" required>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-muted">Inicio</label>
+                                        <input type="date" name="fechaInicio" id="t-inicio" class="form-control bg-light border-0" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-muted">Fin</label>
+                                        <input type="date" name="fechaFin" id="t-fin" class="form-control bg-light border-0" required>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-muted">Progreso (%)</label>
+                                        <input type="range" name="progreso" id="t-progreso" class="form-range mt-2" min="0" max="100" step="5" value="0" oninput="document.getElementById('lblProgreso').innerText = this.value + '%'">
+                                        <div class="text-center text-primary fw-bold" id="lblProgreso">0%</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-muted">Depende de (ID)</label>
+                                        <input type="text" name="dependenciaStr" id="t-dependencia" class="form-control bg-light border-0" placeholder="Ej: 1, 2">
+                                    </div>
+                                </div>
+
+                                <div id="seccionBitacora" class="d-none mb-4">
+                                    <label class="form-label fw-bold small text-muted text-warning"><i class="bi bi-journal-text me-1"></i>Motivo del Cambio (Opcional)</label>
+                                    <input type="text" name="nuevoComentario" class="form-control bg-warning bg-opacity-10 border-warning border-opacity-50" placeholder="¿Por qué se modificó la fecha o progreso?">
+                                    <div class="mt-2" id="contenedorBitacoraAnterior" style="max-height: 80px; overflow-y: auto; font-size: 0.75rem;"></div>
+                                </div>
+                                <input type="hidden" name="bitacora" id="t-bitacora-hidden">
+                                
+                                <div class="d-flex gap-2 border-top pt-3">
+                                    <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold shadow-sm">Guardar</button>
+                                </div>
+                            </form>
+                            
+                            <form th:action="@{/proyectos/tareas/eliminar}" method="post" id="formEliminar" class="mt-2 d-none">
+                                <input type="hidden" name="idTarea" id="eliminar-id">
+                                <input type="hidden" name="idProyecto" th:value="${proyecto.id}">
+                                <button type="submit" class="btn btn-outline-danger w-100 rounded-pill fw-bold shadow-sm" onclick="return confirm('¿Eliminar actividad?')"><i class="bi bi-trash-fill me-1"></i>Eliminar Tarea</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILA INFERIOR: GASTOS Y HERRAMIENTAS -->
+            <div class="row g-4 mt-1">
+                <!-- Panel de Gastos/Facturas -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-danger"><i class="bi bi-receipt me-2"></i>Facturas del Proyecto</h6>
+                            <!-- CORRECCIÓN DEL NULL: Validamos con un operador ternario de Thymeleaf -->
+                            <span class="badge bg-danger rounded-pill fs-6 shadow-sm" th:text="'Total: $' + ${gastoTotal != null ? #numbers.formatDecimal(gastoTotal, 1, 2) : '0.00'}"></span>
+                        </div>
+                        <div class="card-body p-0 table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light text-muted"><tr><th class="ps-4">Fecha</th><th>Proveedor</th><th class="text-end pe-4">Monto</th></tr></thead>
+                                <tbody>
+                                    <tr th:each="f : ${facturasProyecto}">
+                                        <td class="ps-4" th:text="${#temporals.format(f.fecha, 'dd/MM/yyyy')}"></td>
+                                        <td class="fw-bold text-dark"><i class="bi bi-shop me-1 text-muted"></i>[[${f.proveedor}]]</td>
+                                        <td class="text-end pe-4 text-danger fw-bold" th:text="'-$' + ${#numbers.formatDecimal(f.monto, 1, 2)}"></td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(facturasProyecto)}"><td colspan="3" class="text-center py-4 text-muted">No hay gastos registrados en este proyecto.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer bg-light border-0 text-center">
+                            <a th:href="@{/facturas(q=${proyecto.nombre})}" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold">Gestionar Gastos</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de Herramientas Prestadas (Se mantiene igual) -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-success"><i class="bi bi-tools me-2"></i>Herramientas en Obra</h6>
+                        </div>
+                        <div class="card-body p-0 table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light text-muted"><tr><th class="ps-4">Equipo</th><th>Acción</th><th class="text-center">Cant.</th><th class="pe-4">Responsable</th></tr></thead>
+                                <tbody>
+                                    <tr th:each="m : ${movimientosProyecto}">
+                                        <td class="ps-4 fw-bold text-dark text-truncate" style="max-width: 150px;">[[${m.herramienta.nombre}]]</td>
+                                        <td>
+                                            <span th:if="${m.tipo == 'ASIGNACION'}" class="badge bg-danger-subtle text-danger border border-danger">Prestado</span>
+                                            <span th:if="${m.tipo == 'DEVOLUCION'}" class="badge bg-success-subtle text-success border border-success">Devuelto</span>
+                                        </td>
+                                        <td class="text-center fw-bold" th:classappend="${m.tipo == 'ASIGNACION' ? 'text-danger' : 'text-success'}" th:text="${m.tipo == 'ASIGNACION' ? '-' : '+'} + ${m.cantidad}"></td>
+                                        <td class="pe-4 text-muted"><i class="bi bi-person-fill me-1"></i>[[${m.responsable}]]</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(movimientosProyecto)}"><td colspan="4" class="text-center py-4 text-muted">No hay movimientos de inventario en este proyecto.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer bg-light border-0 text-center">
+                            <a href="/inventario" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold">Ir a Bodega</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    
+    <script th:replace="~{fragments/layout :: script}"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const tareasBackend = /*[[${tareas}]]*/ [];
+        
+        if (tareasBackend.length > 0) {
+            const tasks = tareasBackend.map(t => ({
+                id: t.id.toString(),
+                name: t.nombre,
+                start: t.fechaInicio,
+                end: t.fechaFin,
+                progress: t.progreso,
+                dependencies: t.dependenciaStr ? t.dependenciaStr : '',
+                custom_bitacora: t.bitacora 
+            }));
+
+            const ganttChart = new Gantt("#gantt", tasks, {
+                header_height: 50,
+                column_width: 30,
+                step: 24,
+                view_modes: ['Day', 'Week', 'Month'],
+                bar_height: 25,
+                bar_corner_radius: 5,
+                arrow_curve: 5,
+                padding: 18,
+                view_mode: 'Week',
+                date_format: 'YYYY-MM-DD',
+                language: 'es',
+                
+                on_click: function (task) { llenarFormulario(task); },
+                
+                on_date_change: function(task, start, end) {
+                    llenarFormulario(task);
+                    const adjustedEnd = new Date(end);
+                    adjustedEnd.setDate(adjustedEnd.getDate() - 1);
+                    document.getElementById('t-inicio').value = start.toISOString().split('T')[0];
+                    document.getElementById('t-fin').value = adjustedEnd.toISOString().split('T')[0];
+                    activarAlertaGuardado("Guardar Fechas Modificadas");
+                },
+
+                on_progress_change: function(task, progress) {
+                    llenarFormulario(task);
+                    document.getElementById('t-progreso').value = progress;
+                    document.getElementById('lblProgreso').innerText = progress + '%';
+                    activarAlertaGuardado("Guardar Nuevo Progreso");
+                }
+            });
+
+            window.gantt = ganttChart;
+            document.querySelectorAll('.btn-group button').forEach(b => {
+                b.addEventListener('click', function() {
+                    document.querySelectorAll('.btn-group button').forEach(bt => bt.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        function llenarFormulario(task) {
+            document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-fill me-2"></i>Editando Tarea #' + task.id;
+            document.getElementById('t-id').value = task.id;
+            document.getElementById('t-nombre').value = task.name;
+            document.getElementById('t-inicio').value = task._start.toISOString().split('T')[0];
+            document.getElementById('t-fin').value = task._end.toISOString().split('T')[0];
+            document.getElementById('t-progreso').value = task.progress;
+            document.getElementById('lblProgreso').innerText = task.progress + '%';
+            document.getElementById('t-dependencia').value = task.dependencies.join(', ');
+            
+            document.getElementById('seccionBitacora').classList.remove('d-none');
+            document.getElementById('t-bitacora-hidden').value = task.custom_bitacora || '';
+            const contenedorLogs = document.getElementById('contenedorBitacoraAnterior');
+            if(task.custom_bitacora) contenedorLogs.innerHTML = task.custom_bitacora.replace(/\n/g, '<br>');
+            else contenedorLogs.innerHTML = '<span class="text-muted">Sin cambios previos registrados.</span>';
+
+            document.getElementById('btnLimpiar').classList.remove('d-none');
+            document.getElementById('eliminar-id').value = task.id;
+            document.getElementById('formEliminar').classList.remove('d-none');
+            
+            const btn = document.querySelector('#tareaForm button[type="submit"]');
+            btn.classList.replace('btn-warning', 'btn-success');
+            btn.classList.remove('text-dark');
+            btn.innerText = "Guardar";
+        }
+
+        function activarAlertaGuardado(mensaje) {
+            document.getElementById('formTitle').innerHTML = '<i class="bi bi-exclamation-circle-fill text-warning me-2"></i>Cambio detectado';
+            const btn = document.querySelector('#tareaForm button[type="submit"]');
+            btn.classList.replace('btn-success', 'btn-warning');
+            btn.classList.add('text-dark');
+            btn.innerText = mensaje;
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('tareaForm').reset();
+            document.getElementById('t-id').value = '';
+            document.getElementById('lblProgreso').innerText = '0%';
+            document.getElementById('formTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Nueva Tarea';
+            document.getElementById('btnLimpiar').classList.add('d-none');
+            document.getElementById('formEliminar').classList.add('d-none');
+            document.getElementById('seccionBitacora').classList.add('d-none');
+            document.getElementById('t-bitacora-hidden').value = '';
+            
+            const btn = document.querySelector('#tareaForm button[type="submit"]');
+            btn.classList.replace('btn-warning', 'btn-success');
+            btn.classList.remove('text-dark');
+            btn.innerText = "Guardar";
+        }
+        /*]]>*/
+    </script>
+</body>
+</html>

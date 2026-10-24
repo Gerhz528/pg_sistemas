@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Trabajadores')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('trabajadores')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Lista de Personal')}"></header>
+        <main class="content-body">
+            
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <form action="/trabajadores" method="get" class="flex-grow-1" style="max-width: 500px;">
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white border">
+                        <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" th:value="${q}" class="form-control border-0 bg-white shadow-none" placeholder="Buscar por nombre o DUI...">
+                        <a th:if="${q != null and q != ''}" href="/trabajadores" class="btn btn-white border-0 text-danger d-flex align-items-center" title="Limpiar búsqueda"><i class="bi bi-x-circle-fill"></i></a>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">Buscar</button>
+                    </div>
+                </form>
+
+                <div class="d-flex gap-2">
+                    <a href="/trabajadores/puestos" class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm"><i class="bi bi-gear me-2"></i>Cargos</a>
+                    <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearTrabajador">
+                        <i class="bi bi-person-plus-fill me-2"></i>Registrar Trabajador
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Empleado</th>
+                                <th>DUI</th>
+                                <th>Puesto Actual</th>
+                                <th>Estado</th>
+                                <th class="text-center pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="t : ${trabajadores}">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div style="width: 45px; height: 45px; overflow: hidden; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                                            <img th:if="${t.foto != null}" th:src="@{'/uploads/' + ${t.foto}}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <i th:unless="${t.foto != null}" class="bi bi-person-fill text-secondary fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <span class="fw-bold text-dark d-block" th:text="${t.nombre}"></span>
+                                            <small class="text-muted"><i class="bi bi-telephone-fill me-1"></i><span th:text="${t.telefono != null ? t.telefono : 'Sin teléfono'}"></span></small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td th:text="${t.dui}" class="text-muted font-monospace small"></td>
+                                <td><span class="badge bg-secondary-subtle text-secondary border border-secondary" th:text="${t.puesto != null ? t.puesto.nombre : 'Sin Puesto'}"></span></td>
+                                <td>
+                                    <span th:if="${t.activo}" class="badge bg-success-subtle text-success">Activo</span>
+                                    <span th:unless="${t.activo}" class="badge bg-danger-subtle text-danger">Inactivo</span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <a th:href="@{/trabajadores/perfil/{id}(id=${t.id})}" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                        Ver Perfil <i class="bi bi-arrow-right-short ms-1"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(trabajadores)}">
+                                <td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-search display-6 d-block mb-2"></i>No se encontraron resultados para "<span th:text="${q}"></span>"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal Crear Trabajador (Añadido enctype para archivos) -->
+            <div class="modal fade" id="modalCrearTrabajador" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content border-0 shadow">
+                        <form th:action="@{/trabajadores/guardar}" th:object="${nuevoTrabajador}" method="post" enctype="multipart/form-data">
+                            <div class="modal-header bg-success text-white border-0">
+                                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Registrar Nuevo Trabajador</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="row g-4">
+                                    <!-- Columna Izquierda: Datos Personales -->
+                                    <div class="col-md-6 border-end pe-4">
+                                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-file-person me-2"></i>Información Básica</h6>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-muted">Nombre Completo</label>
+                                            <input type="text" th:field="*{nombre}" class="form-control bg-light border-0" required>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold small text-muted">DUI</label>
+                                                <input type="text" th:field="*{dui}" class="form-control bg-light border-0 dui-format" placeholder="00000000-0" required pattern="\d{8}-\d" maxlength="10">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold small text-muted">NSS</label>
+                                                <input type="text" th:field="*{nss}" class="form-control bg-light border-0" required>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold small text-muted">Fecha Ingreso</label>
+                                                <input type="date" th:field="*{fechaIngreso}" class="form-control bg-light border-0" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold small text-muted">Cargo / Puesto</label>
+                                                <select th:field="*{puesto.id}" class="form-select bg-light border-0" required>
+                                                    <option value="">-- Seleccione --</option>
+                                                    <option th:each="p : ${puestos}" th:value="${p.id}" th:text="${p.nombre}"></option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Columna Derecha: Contacto y Archivos -->
+                                    <div class="col-md-6 ps-3">
+                                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-telephone-fill me-2"></i>Contacto y Expediente</h6>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold small text-muted">Teléfono</label>
+                                                <input type="text" th:field="*{telefono}" class="form-control bg-light border-0">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold small text-muted">Emergencia</label>
+                                                <input type="text" th:field="*{contactoEmergencia}" class="form-control bg-light border-0" placeholder="Nombre y Tel">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-muted">Dirección</label>
+                                            <input type="text" th:field="*{direccion}" class="form-control bg-light border-0">
+                                        </div>
+                                        
+                                        <div class="mb-2 mt-4">
+                                            <label class="form-label small text-muted fw-bold">Foto del Empleado (JPG/PNG)</label>
+                                            <input type="file" name="fileFoto" class="form-control form-control-sm border-0 bg-light" accept="image/*">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small text-muted fw-bold">Documento de Identidad (PDF)</label>
+                                            <input type="file" name="fileDui" class="form-control form-control-sm border-0 bg-light" accept=".pdf">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small text-muted fw-bold">Curriculum Vitae (PDF)</label>
+                                            <input type="file" name="fileCv" class="form-control form-control-sm border-0 bg-light" accept=".pdf">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 bg-light">
+                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Guardar Ficha</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script th:replace="~{fragments/layout :: script}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const duiInputs = document.querySelectorAll('.dui-format');
+            duiInputs.forEach(input => {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 9) value = value.slice(0, 9);
+                    if (value.length > 8) value = value.slice(0, 8) + '-' + value.slice(8);
+                    e.target.value = value;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

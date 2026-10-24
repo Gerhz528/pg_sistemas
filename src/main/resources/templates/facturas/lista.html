@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Gastos y Facturas')}"></head>
+<body>
+    <aside th:replace="~{fragments/layout :: sidebar('facturas')}"></aside>
+    <div id="main-content">
+        <header th:replace="~{fragments/layout :: topbar('Control de Gastos de Campo')}"></header>
+        <main class="content-body">
+            
+            <div th:if="${success}" class="alert alert-success border-0 shadow-sm mb-4" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger border-0 shadow-sm mb-4" th:text="${error}"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <form action="/facturas" method="get" class="flex-grow-1" style="max-width: 500px;">
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white border">
+                        <span class="input-group-text bg-white border-0 ps-4"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" th:value="${q}" class="form-control border-0 bg-white shadow-none" placeholder="Buscar por proveedor o proyecto...">
+                        <a th:if="${q != null and q != ''}" href="/facturas" class="btn btn-white border-0 text-danger"><i class="bi bi-x-circle-fill"></i></a>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">Filtrar</button>
+                    </div>
+                </form>
+
+                <button sec:authorize="hasRole('SUPERVISOR')" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalSubirFactura">
+                    <i class="bi bi-camera-fill me-2"></i>Capturar Gasto
+                </button>
+            </div>
+
+            <!-- HU-22: GALERÍA CON MINIATURAS (THUMBNAILS) -->
+            <div class="row g-4">
+                <div class="col-md-4 col-lg-3" th:each="f : ${facturas}">
+                    <div class="card shadow-sm border-0 h-100 overflow-hidden">
+                        <!-- Imagen Clickable que abre el Lightbox -->
+                        <div style="height: 200px; overflow: hidden; cursor: pointer; background: #000;" 
+                             th:attr="onclick=|abrirLightbox('/uploads/${f.archivoImagen}')|" title="Haz clic para ver comprobante">
+                            <img th:src="@{'/uploads/' + ${f.archivoImagen}}" class="w-100 h-100 opacity-75" style="object-fit: cover; transition: 0.3s;" onmouseover="this.classList.remove('opacity-75')" onmouseout="this.classList.add('opacity-75')">
+                        </div>
+                        <div class="card-body">
+                            <h4 class="fw-bold text-danger mb-2" th:text="'-$' + ${#numbers.formatDecimal(f.monto, 1, 2)}"></h4>
+                            <p class="mb-1 fw-bold text-dark"><i class="bi bi-buildings-fill text-primary me-2"></i>[[${f.proyecto.nombre}]]</p>
+                            <p class="mb-1 small text-muted"><i class="bi bi-shop me-2"></i>[[${f.proveedor}]]</p>
+                            <p class="mb-0 small text-muted"><i class="bi bi-calendar-event me-2"></i>[[${#temporals.format(f.fecha, 'dd/MM/yyyy')}]]</p>
+                        </div>
+                        <div class="card-footer bg-light border-0 small text-muted text-truncate">
+                            <i class="bi bi-person-fill me-1"></i> Subido por: <strong th:text="${f.supervisor.nombreCompleto}"></strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div th:if="${#lists.isEmpty(facturas)}" class="col-12 text-center py-5 text-muted">
+                    <i class="bi bi-receipt display-6 d-block mb-2"></i>
+                    No hay facturas o gastos registrados.
+                </div>
+            </div>
+
+            <!-- Modal Subir Factura (Supervisor) -->
+            <div sec:authorize="hasRole('SUPERVISOR')" class="modal fade" id="modalSubirFactura" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <form th:action="@{/facturas/guardar}" th:object="${nuevaFactura}" method="post" enctype="multipart/form-data">
+                            <div class="modal-header bg-success text-white border-0">
+                                <h5 class="modal-title fw-bold"><i class="bi bi-camera me-2"></i>Registrar Comprobante</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Proyecto Destino</label>
+                                    <select th:field="*{proyecto.id}" class="form-select bg-light border-0 fw-bold" required>
+                                        <option value="">-- Selecciona el Proyecto --</option>
+                                        <option th:each="p : ${proyectos}" th:value="${p.id}" th:text="${p.nombre}"></option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-muted">Proveedor / Tienda</label>
+                                    <input type="text" th:field="*{proveedor}" class="form-control bg-light border-0" placeholder="Ej: Ferretería EPA" required>
+                                </div>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-muted">Fecha del Ticket</label>
+                                        <input type="date" th:field="*{fecha}" class="form-control bg-light border-0" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-muted">Monto Total ($)</label>
+                                        <input type="number" step="0.01" th:field="*{monto}" class="form-control bg-light border-0 text-danger fw-bold" placeholder="0.00" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2 text-center p-4 border rounded-4 bg-light">
+                                    <label class="form-label fw-bold text-dark d-block mb-3"><i class="bi bi-images me-2"></i>Fotografía del Comprobante</label>
+                                    <!-- HU-20: 'capture="environment"' abre la cámara en celulares -->
+                                    <input type="file" name="fileImagen" id="fileFactura" accept="image/*" class="form-control mb-3" capture="environment" onchange="previewImagen(event)" required>
+                                    <img id="imgPreview" src="" class="img-fluid rounded shadow-sm d-none mx-auto" style="max-height: 250px;">
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 bg-white">
+                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Guardar Gasto</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HU-22: LIGHTBOX (Visor de Imágenes en Pantalla Completa) -->
+            <div class="modal fade" id="modalLightbox" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content bg-transparent border-0">
+                        <div class="modal-header border-0 pb-0">
+                            <a href="#" id="btnDescargar" download class="btn btn-primary rounded-pill fw-bold shadow-lg"><i class="bi bi-download me-2"></i>Descargar</a>
+                            <button type="button" class="btn-close btn-close-white fs-4 bg-dark rounded-circle p-2" data-bs-dismiss="modal" style="opacity: 1;"></button>
+                        </div>
+                        <div class="modal-body text-center pt-2">
+                            <img id="lightboxImg" src="" class="img-fluid rounded shadow-lg" style="max-height: 80vh;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    
+    <script th:replace="~{fragments/layout :: script}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts UI -->
+    <script>
+        // HU-20: Tarea 3 - Vista previa de la imagen al seleccionarla
+        function previewImagen(event) {
+            const input = event.target;
+            const preview = document.getElementById('imgPreview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // HU-22: Tarea 3 - Lógica del Visor (Lightbox)
+        function abrirLightbox(url) {
+            document.getElementById('lightboxImg').src = url;
+            document.getElementById('btnDescargar').href = url; // Asigna URL al botón descargar
+        }
+    </script>
+</body>
+</html>
